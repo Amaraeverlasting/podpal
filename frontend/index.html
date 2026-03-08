@@ -350,6 +350,11 @@
 
     const DEEPGRAM_API_KEY = "DEEPGRAM_KEY_PLACEHOLDER";
 
+    // ── Transcription engine selector ──────────────────────────────────
+    // Uses Deepgram if key is set, otherwise falls back to Web Speech API
+    const USE_DEEPGRAM = DEEPGRAM_API_KEY && DEEPGRAM_API_KEY !== "DEEPGRAM_KEY_PLACEHOLDER";
+    let recognition = null; // Web Speech API instance
+
     function showSetup() {
       document.getElementById('setup-modal').classList.remove('hidden');
     }
@@ -466,30 +471,104 @@
     }
 
     async function startListening() {
-      if (!DEEPGRAM_API_KEY || DEEPGRAM_API_KEY === 'DEEPGRAM_KEY_PLACEHOLDER') {
-        toast('⚠ No Deepgram key — set DEEPGRAM_API_KEY in .env');
+      if (USE_DEEPGRAM) {
+        startDeepgram();
+      } else {
+        startWebSpeech();
+      }
+    }
+
+    // ── Web Speech API ─────────────────────────────────────────────────
+    function startWebSpeech() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        toast('⚠ Web Speech API not supported. Use Chrome or Edge.');
         return;
       }
 
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        isListening = true;
+        setStatus('live', 'Live · Web Speech');
+        document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
+        document.getElementById('mic-btn').classList.remove('btn-primary');
+        document.getElementById('mic-btn').classList.add('btn-danger');
+        toast('Listening via Web Speech API - speak naturally');
+      };
+
+      recognition.onresult = (event) => {
+        let finalText = '';
+        let interimText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalText += result[0].transcript + ' ';
+          } else {
+            interimText += result[0].transcript;
+          }
+        }
+
+        // Show interim in transcript strip immediately
+        if (interimText) {
+          const el = document.getElementById('transcript-text');
+          const last = transcriptWords.slice(-30).join(' ');
+          el.innerHTML = `<span style="opacity:0.4">${transcriptWords.slice(0,-30).join(' ')}</span> <span class="word-new">${last}</span> <span style="opacity:0.35;font-style:italic">${interimText}</span>`;
+        }
+
+        // Send final transcript to backend for intelligence
+        if (finalText.trim() && ws?.readyState === WebSocket.OPEN) {
+          const words = finalText.trim().split(' ').map(w => ({ word: w }));
+          ws.send(JSON.stringify({ type: 'transcript', text: finalText.trim(), words }));
+        }
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          toast('Microphone access denied. Please allow mic access and try again.');
+        } else if (e.error !== 'no-speech') {
+          toast('Speech recognition error: ' + e.error);
+        }
+      };
+
+      recognition.onend = () => {
+        // Auto-restart if still supposed to be listening
+        if (isListening) {
+          recognition.start();
+        }
+      };
+
+      recognition.start();
+    }
+
+    // ── Deepgram streaming ─────────────────────────────────────────────
+    async function startDeepgram() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
-        deepgramSocket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&language=en', ['token', DEEPGRAM_API_KEY]);
+        deepgramSocket = new WebSocket(
+          'wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&language=en',
+          ['token', DEEPGRAM_API_KEY]
+        );
 
         deepgramSocket.onopen = () => {
           const mimeType = 'audio/webm;codecs=opus';
           mediaRecorder = new MediaRecorder(stream, { mimeType });
           mediaRecorder.ondataavailable = (e) => {
-            if (deepgramSocket.readyState === WebSocket.OPEN) {
-              deepgramSocket.send(e.data);
-            }
+            if (deepgramSocket.readyState === WebSocket.OPEN) deepgramSocket.send(e.data);
           };
-          mediaRecorder.start(250); // send chunk every 250ms
+          mediaRecorder.start(250);
           isListening = true;
-          setStatus('live', 'Live');
+          setStatus('live', 'Live · Deepgram');
           document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
           document.getElementById('mic-btn').classList.remove('btn-primary');
           document.getElementById('mic-btn').classList.add('btn-danger');
+          toast('Listening via Deepgram Nova-2');
         };
 
         deepgramSocket.onmessage = (e) => {
@@ -503,7 +582,7 @@
           }
         };
 
-        deepgramSocket.onerror = (e) => toast('Deepgram connection error');
+        deepgramSocket.onerror = () => toast('Deepgram connection error');
 
       } catch (err) {
         toast('Microphone access denied: ' + err.message);
@@ -511,8 +590,12 @@
     }
 
     function stopListening() {
+      // Stop Web Speech
+      if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+      // Stop Deepgram
       if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
       if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
+
       isListening = false;
       setStatus('connected', 'Connected');
       document.getElementById('mic-btn').textContent = '🎙 Start Listening';
