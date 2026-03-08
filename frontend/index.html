@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodPal — Live AI Co-Pilot</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1a1a24;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c6df0;
+      --accent2: #4ecdc4;
+      --gold: #f0c040;
+      --red: #ff5c5c;
+      --green: #4ade80;
+      --text: #e8e8f0;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+    }
+    .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+    .logo span { color: var(--accent2); }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+    .status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.5 } }
+    .status-label { font-size: 13px; color: var(--muted); }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .btn {
+      padding: 7px 16px; border-radius: 8px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #6a5de0; }
+    .btn-danger { background: rgba(255,92,92,0.15); color: var(--red); border: 1px solid rgba(255,92,92,0.3); }
+    .btn-danger:hover { background: rgba(255,92,92,0.25); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--surface2); }
+    .topic-badge {
+      background: rgba(124,109,240,0.15);
+      border: 1px solid rgba(124,109,240,0.3);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Main grid */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: 1fr 160px;
+      gap: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    /* Panel base */
+    .panel {
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+    .panel-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .panel-body::-webkit-scrollbar { width: 3px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--surface2); }
+
+    /* Research panel */
+    #research-panel { grid-row: 1; grid-column: 2; }
+    .research-source {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .research-source::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+    .research-text {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .research-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--surface2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Questions panel */
+    #questions-panel { grid-row: 1; grid-column: 1; }
+    .question-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .question-item:hover { border-color: rgba(124,109,240,0.4); background: var(--surface2); }
+    .question-item::before {
+      content: "→";
+      color: var(--accent);
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    /* Fact check */
+    .fact-item {
+      background: rgba(255,92,92,0.05);
+      border: 1px solid rgba(255,92,92,0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .fact-claim { color: var(--red); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .fact-result { color: var(--text); line-height: 1.5; }
+
+    /* Transcript strip */
+    #transcript-panel {
+      grid-row: 2;
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    #transcript-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(232,232,240,0.7);
+      font-family: "Georgia", serif;
+      padding: 14px 20px;
+      overflow-y: auto;
+      height: 100%;
+    }
+    .word-new { color: var(--text); font-weight: 500; }
+
+    /* Setup modal */
+    #setup-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #setup-modal.hidden { display: none; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 480px;
+      max-width: 95vw;
+    }
+    .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    textarea.form-input { resize: vertical; min-height: 80px; }
+
+    /* Notification toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 13px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; }
+    .new-topic-flash { animation: flash 1s ease; }
+    @keyframes flash { 0%,100% { background: var(--bg) } 50% { background: rgba(124,109,240,0.08) } }
+  </style>
+</head>
+<body>
+
+  <!-- Setup Modal -->
+  <div id="setup-modal">
+    <div class="modal-box">
+      <div class="modal-title">🎙️ PodPal Setup</div>
+      <div class="modal-sub">Tell PodPal about you and your show</div>
+      <div class="form-group">
+        <label class="form-label">Your Name</label>
+        <input class="form-input" id="host-name" placeholder="e.g. Mic Mann" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Show Name</label>
+        <input class="form-input" id="show-name" placeholder="e.g. The Singularity Podcast" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topics You Cover (comma separated)</label>
+        <input class="form-input" id="host-topics" placeholder="AI, singularity, Africa tech, entrepreneurship, metaverse" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Today's Guest (optional)</label>
+        <input class="form-input" id="guest-name" placeholder="Guest name and brief bio" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Episode Topic / Notes</label>
+        <textarea class="form-input" id="episode-notes" placeholder="What are you discussing today? Any specific angles or questions you want to explore?"></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="startSession()">Start Session →</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">Pod<span>Pal</span></div>
+    <div class="status-dot" id="status-dot"></div>
+    <div class="status-label" id="status-label">Ready</div>
+    <div class="topic-badge" id="topic-badge">No topic detected yet</div>
+    <div class="header-right">
+      <button class="btn btn-outline" onclick="showSetup()">⚙ Setup</button>
+      <button class="btn btn-primary" id="mic-btn" onclick="toggleMic()">🎙 Start Listening</button>
+    </div>
+  </header>
+
+  <!-- Main layout -->
+  <main>
+    <!-- Talking points (left) -->
+    <div class="panel" id="questions-panel">
+      <div class="panel-header">
+        <span class="panel-title">💡 Talking Points</span>
+        <span class="panel-badge" id="q-count">0</span>
+      </div>
+      <div class="panel-body" id="questions-body">
+        <div class="empty-state">Start talking — PodPal will suggest follow-up questions as you go.</div>
+      </div>
+    </div>
+
+    <!-- Research (right) -->
+    <div class="panel" id="research-panel">
+      <div class="panel-header">
+        <span class="panel-title">🔬 Live Research</span>
+        <span class="panel-badge" id="research-source">—</span>
+      </div>
+      <div class="panel-body" id="research-body">
+        <div class="empty-state">Research will appear here when a topic is detected.</div>
+      </div>
+    </div>
+
+    <!-- Transcript strip (bottom) -->
+    <div class="panel" id="transcript-panel">
+      <div id="transcript-text">Transcript will appear here as you speak...</div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const BACKEND_URL = window.location.origin.replace(/^http/, 'ws');
+    let ws = null;
+    let sessionId = null;
+    let mediaRecorder = null;
+    let deepgramSocket = null;
+    let isListening = false;
+    let transcriptWords = [];
+
+    const DEEPGRAM_API_KEY = "DEEPGRAM_KEY_PLACEHOLDER";
+
+    function showSetup() {
+      document.getElementById('setup-modal').classList.remove('hidden');
+    }
+
+    async function startSession() {
+      const name = document.getElementById('host-name').value || 'Host';
+      const show = document.getElementById('show-name').value || 'My Podcast';
+      const topicsRaw = document.getElementById('host-topics').value;
+      const topics = topicsRaw.split(',').map(t => t.trim()).filter(Boolean);
+      const guest = document.getElementById('guest-name').value;
+      const notes = document.getElementById('episode-notes').value;
+
+      const resp = await fetch('/session/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          host_profile: { name, show, topics, guest, notes }
+        })
+      });
+      const data = await resp.json();
+      sessionId = data.session_id;
+
+      // Connect WebSocket
+      ws = new WebSocket(`${BACKEND_URL}/ws/${sessionId}`);
+      ws.onopen = () => {
+        setStatus('connected', 'Connected');
+        toast('Session started. Click "Start Listening" to begin.');
+      };
+      ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+      ws.onclose = () => setStatus('off', 'Disconnected');
+
+      document.getElementById('setup-modal').classList.add('hidden');
+    }
+
+    function handleMessage(msg) {
+      switch(msg.type) {
+        case 'transcript_update':
+          updateTranscript(msg.text);
+          break;
+        case 'topic_update':
+          updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks);
+          break;
+        case 'research_update':
+          updateResearch(msg.research, msg.source, msg.topic);
+          break;
+        case 'fact_check':
+          addFactCheck(msg.claim, msg.result, msg.source);
+          break;
+      }
+    }
+
+    function updateTranscript(text) {
+      const el = document.getElementById('transcript-text');
+      if (!text) return;
+      transcriptWords.push(text);
+      // Keep last 200 words
+      if (transcriptWords.length > 200) transcriptWords = transcriptWords.slice(-200);
+      const last20 = transcriptWords.slice(-20).join(' ');
+      const rest = transcriptWords.slice(0, -20).join(' ');
+      el.innerHTML = `<span style="opacity:0.4">${rest}</span> <span class="word-new">${last20}</span>`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function updateTopic(topic, changed, questions, factChecks) {
+      document.getElementById('topic-badge').textContent = topic || 'Detecting...';
+
+      if (changed || questions?.length) {
+        const body = document.getElementById('questions-body');
+        const qs = questions || [];
+        document.getElementById('q-count').textContent = qs.length;
+
+        if (qs.length) {
+          body.classList.add('new-topic-flash');
+          setTimeout(() => body.classList.remove('new-topic-flash'), 1000);
+          body.innerHTML = qs.map(q =>
+            `<div class="question-item">${q}</div>`
+          ).join('');
+        }
+
+        // Show research loading
+        if (changed) {
+          document.getElementById('research-body').innerHTML =
+            `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"...</div>`;
+        }
+      }
+    }
+
+    function updateResearch(research, source, topic) {
+      document.getElementById('research-source').textContent = source || '—';
+      document.getElementById('research-body').innerHTML =
+        `<div class="research-source">${source} · ${topic}</div>
+         <div class="research-text">${research}</div>`;
+    }
+
+    function addFactCheck(claim, result, source) {
+      const body = document.getElementById('questions-body');
+      const div = document.createElement('div');
+      div.className = 'fact-item';
+      div.innerHTML = `<div class="fact-claim">⚠ Fact Check: "${claim}"</div><div class="fact-result">${result}</div>`;
+      body.insertBefore(div, body.firstChild);
+    }
+
+    async function toggleMic() {
+      if (!sessionId) {
+        toast('Please complete setup first.');
+        showSetup();
+        return;
+      }
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    }
+
+    async function startListening() {
+      if (!DEEPGRAM_API_KEY || DEEPGRAM_API_KEY === 'DEEPGRAM_KEY_PLACEHOLDER') {
+        toast('⚠ No Deepgram key — set DEEPGRAM_API_KEY in .env');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+        deepgramSocket = new WebSocket('wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&language=en', ['token', DEEPGRAM_API_KEY]);
+
+        deepgramSocket.onopen = () => {
+          const mimeType = 'audio/webm;codecs=opus';
+          mediaRecorder = new MediaRecorder(stream, { mimeType });
+          mediaRecorder.ondataavailable = (e) => {
+            if (deepgramSocket.readyState === WebSocket.OPEN) {
+              deepgramSocket.send(e.data);
+            }
+          };
+          mediaRecorder.start(250); // send chunk every 250ms
+          isListening = true;
+          setStatus('live', 'Live');
+          document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
+          document.getElementById('mic-btn').classList.remove('btn-primary');
+          document.getElementById('mic-btn').classList.add('btn-danger');
+        };
+
+        deepgramSocket.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          const alt = data?.channel?.alternatives?.[0];
+          if (!alt) return;
+          const words = alt.words || [];
+          const transcript = alt.transcript || '';
+          if (transcript && data.is_final && ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'transcript', text: transcript, words }));
+          }
+        };
+
+        deepgramSocket.onerror = (e) => toast('Deepgram connection error');
+
+      } catch (err) {
+        toast('Microphone access denied: ' + err.message);
+      }
+    }
+
+    function stopListening() {
+      if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
+      if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
+      isListening = false;
+      setStatus('connected', 'Connected');
+      document.getElementById('mic-btn').textContent = '🎙 Start Listening';
+      document.getElementById('mic-btn').classList.add('btn-primary');
+      document.getElementById('mic-btn').classList.remove('btn-danger');
+    }
+
+    function setStatus(state, label) {
+      const dot = document.getElementById('status-dot');
+      dot.className = 'status-dot' + (state === 'live' ? ' live' : '');
+      document.getElementById('status-label').textContent = label;
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    // Auto-show setup on load
+    window.onload = () => showSetup();
+  </script>
+</body>
+</html>
