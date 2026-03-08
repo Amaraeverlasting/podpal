@@ -313,12 +313,44 @@ async def get_transcript(session_id: str):
     return {"transcript": text, "word_count": len(session.full_transcript)}
 
 
+@app.post("/api/waitlist")
+async def join_waitlist(payload: dict):
+    """Save waitlist signups."""
+    import json
+    from pathlib import Path
+    wl_file = Path(__file__).parent.parent / "data" / "waitlist.json"
+    wl_file.parent.mkdir(exist_ok=True)
+    entries = json.loads(wl_file.read_text()) if wl_file.exists() else []
+    entry = {
+        "email": payload.get("email", ""),
+        "show": payload.get("show", ""),
+        "ts": payload.get("ts", ""),
+        "ip": "hidden"
+    }
+    entries.append(entry)
+    wl_file.write_text(json.dumps(entries, indent=2))
+    print(f"Waitlist signup: {entry['email']} - {entry['show']}")
+    return {"ok": True, "position": len(entries)}
+
+
+@app.get("/api/waitlist/count")
+async def waitlist_count():
+    from pathlib import Path
+    import json
+    wl_file = Path(__file__).parent.parent / "data" / "waitlist.json"
+    entries = json.loads(wl_file.read_text()) if wl_file.exists() else []
+    return {"count": len(entries)}
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "0.1.0"}
 
 
-# Serve frontend
+# Serve landing page at root, app at /app
+landing_dir = Path(__file__).parent.parent / "landing"
 frontend_dir = Path(__file__).parent.parent / "frontend" / "dist"
-if frontend_dir.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="static")
+
+if landing_dir.exists():
+    app.mount("/app", StaticFiles(directory=str(frontend_dir), html=True), name="app")
+    app.mount("/", StaticFiles(directory=str(landing_dir), html=True), name="landing")

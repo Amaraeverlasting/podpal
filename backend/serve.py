@@ -11,16 +11,20 @@ import uvicorn
 
 load_dotenv()
 
-# Copy frontend to a location FastAPI can serve
+# Copy frontend + landing to dist
 frontend_src = Path(__file__).parent.parent / "frontend" / "index.html"
+landing_src = Path(__file__).parent.parent / "landing" / "index.html"
 dist_dir = Path(__file__).parent.parent / "frontend" / "dist"
 dist_dir.mkdir(exist_ok=True)
 
-# Inject Deepgram key into HTML at serve time
-html = frontend_src.read_text()
+# Inject Deepgram key into app HTML at serve time
 dg_key = os.getenv("DEEPGRAM_API_KEY", "")
+html = frontend_src.read_text()
 html = html.replace("DEEPGRAM_KEY_PLACEHOLDER", dg_key)
 (dist_dir / "index.html").write_text(html)
+
+# Copy landing page as root
+shutil.copy2(landing_src, dist_dir / "landing.html")
 
 PORT = int(os.getenv("PORT", 8765))
 
