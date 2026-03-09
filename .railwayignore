@@ -1,0 +1,7 @@
+landing/images/*.png
+landing/images/*.jpg
+landing/podpal-landing*.pdf
+data/sessions/
+*.pyc
+__pycache__/
+.env
