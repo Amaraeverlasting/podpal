@@ -351,6 +351,14 @@ async def health():
 landing_dir = Path(__file__).parent.parent / "landing"
 frontend_dir = Path(__file__).parent.parent / "frontend" / "dist"
 
+
+@app.get("/app")
+@app.get("/app/")
+async def serve_app():
+    from fastapi.responses import HTMLResponse
+    app_html = frontend_dir / "index.html"
+    return HTMLResponse(content=app_html.read_text())
+
+
 if landing_dir.exists():
-    app.mount("/app", StaticFiles(directory=str(frontend_dir), html=True), name="app")
     app.mount("/", StaticFiles(directory=str(landing_dir), html=True), name="landing")
