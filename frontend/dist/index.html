@@ -40,37 +40,17 @@
     }
     .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
     .logo span { color: var(--accent2); }
-
-    /* Feature 4: speech status indicator */
-    .mic-indicator {
-      width: 10px; height: 10px; border-radius: 50%;
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
       background: var(--muted);
       transition: background 0.3s;
-      flex-shrink: 0;
     }
-    .mic-indicator.listening {
-      background: var(--green);
-      box-shadow: 0 0 0 0 rgba(74,222,128,0.7);
-      animation: mic-pulse 1.5s infinite;
-    }
-    .mic-indicator.error { background: var(--red); }
-    @keyframes mic-pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.7); }
-      70%  { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
-      100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
-    }
+    .status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.5 } }
     .status-label { font-size: 13px; color: var(--muted); }
-    .topic-badge {
-      background: rgba(124,109,240,0.15);
-      border: 1px solid rgba(124,109,240,0.3);
-      color: var(--accent);
-      padding: 4px 12px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-      max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
     .btn {
-      padding: 7px 14px; border-radius: 8px; border: none;
+      padding: 7px 16px; border-radius: 8px; border: none;
       font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
     .btn-primary { background: var(--accent); color: white; }
@@ -79,12 +59,19 @@
     .btn-danger:hover { background: rgba(255,92,92,0.25); }
     .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .btn-outline:hover { background: var(--surface2); }
-    .btn-success { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
-    .btn-success:hover { background: rgba(74,222,128,0.25); }
-
-    /* Reconnect button (Feature 4) */
-    #reconnect-btn { display: none; }
-    #reconnect-btn.visible { display: inline-flex; align-items: center; gap: 6px; }
+    .topic-badge {
+      background: rgba(124,109,240,0.15);
+      border: 1px solid rgba(124,109,240,0.3);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     /* Main grid */
     main {
@@ -97,137 +84,187 @@
     }
 
     /* Panel base */
-    .panel { background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .panel {
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
     .panel-header {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       flex-shrink: 0;
     }
-    .panel-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
-    .panel-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--surface2); color: var(--muted); }
-    .panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+    .panel-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
     .panel-body::-webkit-scrollbar { width: 3px; }
     .panel-body::-webkit-scrollbar-thumb { background: var(--surface2); }
 
+    /* Research panel */
     #research-panel { grid-row: 1; grid-column: 2; }
-    .research-source { font-size: 10px; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .research-source {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .research-source::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
-    .research-text { font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
-    .research-loading { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-    .spinner { width: 14px; height: 14px; border: 2px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .research-text {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .research-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--surface2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Questions panel */
     #questions-panel { grid-row: 1; grid-column: 1; }
     .question-item {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px 14px; margin-bottom: 10px; font-size: 14px; line-height: 1.5;
-      cursor: pointer; transition: all 0.2s; position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
     }
     .question-item:hover { border-color: rgba(124,109,240,0.4); background: var(--surface2); }
-    .question-item::before { content: "→"; color: var(--accent); margin-right: 8px; font-weight: bold; }
-    .fact-item { background: rgba(255,92,92,0.05); border: 1px solid rgba(255,92,92,0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; font-size: 13px; }
+    .question-item::before {
+      content: "→";
+      color: var(--accent);
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    /* Fact check */
+    .fact-item {
+      background: rgba(255,92,92,0.05);
+      border: 1px solid rgba(255,92,92,0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
     .fact-claim { color: var(--red); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
     .fact-result { color: var(--text); line-height: 1.5; }
 
-    #transcript-panel { grid-row: 2; grid-column: 1 / -1; background: var(--surface); border-top: 1px solid var(--border); }
-    #transcript-text { font-size: 15px; line-height: 1.6; color: rgba(232,232,240,0.7); font-family: "Georgia", serif; padding: 14px 20px; overflow-y: auto; height: 100%; }
+    /* Transcript strip */
+    #transcript-panel {
+      grid-row: 2;
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    #transcript-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(232,232,240,0.7);
+      font-family: "Georgia", serif;
+      padding: 14px 20px;
+      overflow-y: auto;
+      height: 100%;
+    }
     .word-new { color: var(--text); font-weight: 500; }
 
     /* Setup modal */
-    #setup-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    #setup-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
     #setup-modal.hidden { display: none; }
-    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 480px;
+      max-width: 95vw;
+    }
     .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
     .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
     .form-group { margin-bottom: 16px; }
     .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
-    .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.2s; }
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
     .form-input:focus { border-color: var(--accent); }
     textarea.form-input { resize: vertical; min-height: 80px; }
 
-    /* Guest Intel panel (Feature 2) */
-    #guest-intel-panel {
-      background: var(--bg);
-      border: 1px solid rgba(124,109,240,0.3);
-      border-radius: 12px;
-      margin-top: 16px;
-      overflow: hidden;
-      display: none;
-    }
-    #guest-intel-panel.visible { display: block; }
-    .intel-header {
-      background: rgba(124,109,240,0.1);
-      padding: 10px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      cursor: pointer;
-    }
-    .intel-header h4 { font-size: 13px; font-weight: 600; color: var(--accent); }
-    .intel-body { padding: 14px; font-size: 13px; line-height: 1.6; }
-    .intel-section { margin-bottom: 12px; }
-    .intel-section h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
-    .intel-section p, .intel-section li { color: var(--text); }
-    .intel-section ul { padding-left: 16px; }
-    .intel-section li { margin-bottom: 4px; }
-
-    /* Guest brief in app (Feature 2) */
-    #guest-brief-panel {
-      position: fixed; right: 16px; top: 70px;
-      width: 320px; background: var(--surface);
-      border: 1px solid rgba(124,109,240,0.3);
-      border-radius: 12px; z-index: 50;
-      display: none; overflow: hidden;
-    }
-    #guest-brief-panel.visible { display: block; }
-    .brief-header {
-      background: rgba(124,109,240,0.1);
-      padding: 10px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      cursor: pointer;
-    }
-    .brief-header h4 { font-size: 13px; font-weight: 600; color: var(--accent); }
-    .brief-collapse-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
-    .brief-body { padding: 14px; font-size: 13px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
-    .brief-section { margin-bottom: 10px; }
-    .brief-section h5 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 4px; }
-    .brief-section p, .brief-section li { color: var(--text); font-size: 12px; }
-    .brief-section ul { padding-left: 14px; }
-    .brief-section li { margin-bottom: 3px; }
-
-    /* Browser compat warning (Feature 4) */
-    #browser-warning {
-      position: fixed; top: 0; left: 0; right: 0;
-      background: rgba(240,192,64,0.15);
-      border-bottom: 1px solid rgba(240,192,64,0.4);
-      color: var(--gold);
-      padding: 10px 20px;
+    /* Notification toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
       font-size: 13px;
-      text-align: center;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
       z-index: 200;
-      display: none;
     }
-    #browser-warning.visible { display: block; }
-
-    /* Toast */
-    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; transform: translateY(80px); opacity: 0; transition: all 0.3s; z-index: 200; max-width: 360px; }
     #toast.show { transform: translateY(0); opacity: 1; }
 
     .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; }
     .new-topic-flash { animation: flash 1s ease; }
     @keyframes flash { 0%,100% { background: var(--bg) } 50% { background: rgba(124,109,240,0.08) } }
-
-    /* Show Notes export button (Feature 3) */
-    #export-notes-btn { display: none; }
-    #export-notes-btn.visible { display: inline-flex; align-items: center; gap: 6px; }
   </style>
 </head>
 <body>
-
-  <!-- Browser compatibility warning (Feature 4) -->
-  <div id="browser-warning">
-    ⚠ PodPal works best in <strong>Google Chrome</strong>. Your browser may not support Web Speech API.
-    <button onclick="document.getElementById('browser-warning').classList.remove('visible')" style="margin-left:12px;background:none;border:none;color:var(--gold);cursor:pointer;font-size:16px;">×</button>
-  </div>
 
   <!-- Setup Modal -->
   <div id="setup-modal">
@@ -248,31 +285,9 @@
       </div>
       <div class="form-group">
         <label class="form-label">Today's Guest (optional)</label>
-        <div style="display:flex;gap:8px;">
-          <input class="form-input" id="guest-name" placeholder="Guest name" style="flex:1;" />
-          <button class="btn btn-outline" onclick="openGuestIntel()" id="load-intel-btn">🔍 Load Intel</button>
-        </div>
+        <input class="form-input" id="guest-name" placeholder="Guest name and brief bio" />
       </div>
-
-      <!-- Guest Intel sub-panel (Feature 2) -->
-      <div id="guest-intel-setup">
-        <div class="form-group" id="social-url-group" style="display:none;">
-          <label class="form-label">LinkedIn / Twitter URL (optional)</label>
-          <input class="form-input" id="social-url" placeholder="https://linkedin.com/in/..." />
-          <button class="btn btn-outline" onclick="loadGuestIntel()" style="width:100%;margin-top:8px;" id="run-intel-btn">
-            <span id="intel-btn-text">🧠 Research Guest</span>
-          </button>
-        </div>
-        <div id="guest-intel-panel">
-          <div class="intel-header" onclick="toggleIntelPanel()">
-            <h4>👤 <span id="intel-guest-name">Guest Brief</span></h4>
-            <span id="intel-chevron">▼</span>
-          </div>
-          <div class="intel-body" id="intel-body"></div>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-top:8px;">
+      <div class="form-group">
         <label class="form-label">Episode Topic / Notes</label>
         <textarea class="form-input" id="episode-notes" placeholder="What are you discussing today? Any specific angles or questions you want to explore?"></textarea>
       </div>
@@ -283,32 +298,18 @@
   <!-- Header -->
   <header>
     <div class="logo">Pod<span>Pal</span></div>
-    <div class="mic-indicator" id="mic-indicator"></div>
+    <div class="status-dot" id="status-dot"></div>
     <div class="status-label" id="status-label">Ready</div>
     <div class="topic-badge" id="topic-badge">No topic detected yet</div>
     <div class="header-right">
-      <a href="/history" style="text-decoration:none;">
-        <button class="btn btn-outline">📋 Session History</button>
-      </a>
-      <button class="btn btn-outline" id="export-notes-btn" onclick="exportShowNotes()">📄 Export Notes</button>
-      <button class="btn btn-outline" id="guest-brief-toggle" onclick="toggleGuestBrief()" style="display:none;">👤 Guest Brief</button>
-      <button class="btn btn-outline" id="reconnect-btn" onclick="reconnectSpeech()">🔄 Reconnect</button>
       <button class="btn btn-outline" onclick="showSetup()">⚙ Setup</button>
       <button class="btn btn-primary" id="mic-btn" onclick="toggleMic()">🎙 Start Listening</button>
     </div>
   </header>
 
-  <!-- Guest Brief floating panel (Feature 2) -->
-  <div id="guest-brief-panel">
-    <div class="brief-header" onclick="toggleGuestBrief()">
-      <h4>👤 <span id="brief-guest-name">Guest Brief</span></h4>
-      <button class="brief-collapse-btn">×</button>
-    </div>
-    <div class="brief-body" id="brief-body"></div>
-  </div>
-
   <!-- Main layout -->
   <main>
+    <!-- Talking points (left) -->
     <div class="panel" id="questions-panel">
       <div class="panel-header">
         <span class="panel-title">💡 Talking Points</span>
@@ -319,6 +320,7 @@
       </div>
     </div>
 
+    <!-- Research (right) -->
     <div class="panel" id="research-panel">
       <div class="panel-header">
         <span class="panel-title">🔬 Live Research</span>
@@ -329,6 +331,7 @@
       </div>
     </div>
 
+    <!-- Transcript strip (bottom) -->
     <div class="panel" id="transcript-panel">
       <div id="transcript-text">Transcript will appear here as you speak...</div>
     </div>
@@ -337,99 +340,23 @@
   <div id="toast"></div>
 
   <script>
-    // ── State ──────────────────────────────────────────────────────────────
-    const BACKEND_WS = window.location.origin.replace(/^http/, 'ws');
+    const BACKEND_URL = window.location.origin.replace(/^http/, 'ws');
     let ws = null;
     let sessionId = null;
     let mediaRecorder = null;
     let deepgramSocket = null;
     let isListening = false;
     let transcriptWords = [];
-    let DEEPGRAM_API_KEY = "";
+
+    const DEEPGRAM_API_KEY = "";
+
+    // ── Transcription engine selector ──────────────────────────────────
+    // Uses Deepgram if key is set, otherwise falls back to Web Speech API
     const USE_DEEPGRAM = DEEPGRAM_API_KEY && DEEPGRAM_API_KEY !== "";
-    let recognition = null;
-    let guestBriefData = null;
-    let intelPanelOpen = true;
+    let recognition = null; // Web Speech API instance
 
-    // Feature 3: session tracking
-    let sessionData = {
-      topics: [],
-      researchCards: [],
-      factChecks: [],
-      questions: [],
-      startTime: null,
-    };
-
-    // Feature 4: speech reliability
-    let speechStopTimer = null;
-    let lastSpeechAt = Date.now();
-    const RECONNECT_AFTER_MS = 5000;
-
-    // ── Feature 4: Browser compatibility check ─────────────────────────────
-    window.addEventListener('DOMContentLoaded', () => {
-      const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-      const hasWebSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-      if (!hasWebSpeech || (!isChrome && !USE_DEEPGRAM)) {
-        document.getElementById('browser-warning').classList.add('visible');
-      }
-      showSetup();
-    });
-
-    // ── Setup ──────────────────────────────────────────────────────────────
     function showSetup() {
       document.getElementById('setup-modal').classList.remove('hidden');
-    }
-
-    function openGuestIntel() {
-      const socialGroup = document.getElementById('social-url-group');
-      socialGroup.style.display = socialGroup.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function loadGuestIntel() {
-      const name = document.getElementById('guest-name').value.trim();
-      if (!name) { toast('Please enter a guest name first.'); return; }
-      const socialUrl = document.getElementById('social-url').value.trim();
-      const btn = document.getElementById('intel-btn-text');
-      btn.textContent = '⏳ Researching...';
-      document.getElementById('run-intel-btn').disabled = true;
-
-      try {
-        const resp = await fetch('/api/guest-intel', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ name, social_url: socialUrl })
-        });
-        const data = await resp.json();
-        if (data.error) { toast('Intel error: ' + data.error); return; }
-        guestBriefData = data;
-        renderIntelPanel(data);
-        document.getElementById('guest-intel-panel').classList.add('visible');
-        toast('Guest brief loaded for ' + name);
-      } catch (e) {
-        toast('Failed to load guest intel: ' + e.message);
-      } finally {
-        btn.textContent = '🧠 Research Guest';
-        document.getElementById('run-intel-btn').disabled = false;
-      }
-    }
-
-    function renderIntelPanel(data) {
-      document.getElementById('intel-guest-name').textContent = data.name || 'Guest Brief';
-      const works = (data.key_works || []).map(w => `<li>${w}</li>`).join('');
-      const positions = (data.known_positions || []).map(p => `<li>${p}</li>`).join('');
-      const qs = (data.suggested_questions || []).map(q => `<li>${q}</li>`).join('');
-      document.getElementById('intel-body').innerHTML = `
-        <div class="intel-section"><h5>Bio</h5><p>${data.bio || ''}</p></div>
-        <div class="intel-section"><h5>Key Works / Projects</h5><ul>${works}</ul></div>
-        <div class="intel-section"><h5>Known Positions</h5><ul>${positions}</ul></div>
-        <div class="intel-section"><h5>Recent Activity</h5><p>${data.recent_activity || ''}</p></div>
-        <div class="intel-section"><h5>Suggested Questions</h5><ul>${qs}</ul></div>`;
-    }
-
-    function toggleIntelPanel() {
-      intelPanelOpen = !intelPanelOpen;
-      document.getElementById('intel-body').style.display = intelPanelOpen ? 'block' : 'none';
-      document.getElementById('intel-chevron').textContent = intelPanelOpen ? '▼' : '▶';
     }
 
     async function startSession() {
@@ -440,17 +367,18 @@
       const guest = document.getElementById('guest-name').value;
       const notes = document.getElementById('episode-notes').value;
 
-      sessionData = { topics: [], researchCards: [], factChecks: [], questions: [], startTime: Date.now() };
-
       const resp = await fetch('/session/create', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ host_profile: { name, show, topics, guest, notes } })
+        body: JSON.stringify({
+          host_profile: { name, show, topics, guest, notes }
+        })
       });
       const data = await resp.json();
       sessionId = data.session_id;
 
-      ws = new WebSocket(`${BACKEND_WS}/ws/${sessionId}`);
+      // Connect WebSocket
+      ws = new WebSocket(`${BACKEND_URL}/ws/${sessionId}`);
       ws.onopen = () => {
         setStatus('connected', 'Connected');
         toast('Session started. Click "Start Listening" to begin.');
@@ -459,31 +387,31 @@
       ws.onclose = () => setStatus('off', 'Disconnected');
 
       document.getElementById('setup-modal').classList.add('hidden');
-      document.getElementById('export-notes-btn').classList.add('visible');
-
-      // Show guest brief if intel was loaded
-      if (guestBriefData) {
-        renderGuestBrief(guestBriefData);
-        document.getElementById('guest-brief-toggle').style.display = 'inline-flex';
-      }
     }
 
-    // ── Message handling ───────────────────────────────────────────────────
     function handleMessage(msg) {
       switch(msg.type) {
-        case 'transcript_update': updateTranscript(msg.text); break;
-        case 'topic_update': updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
-        case 'research_update': updateResearch(msg.research, msg.source, msg.topic); break;
-        case 'fact_check': addFactCheck(msg.claim, msg.result, msg.source); break;
+        case 'transcript_update':
+          updateTranscript(msg.text);
+          break;
+        case 'topic_update':
+          updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks);
+          break;
+        case 'research_update':
+          updateResearch(msg.research, msg.source, msg.topic);
+          break;
+        case 'fact_check':
+          addFactCheck(msg.claim, msg.result, msg.source);
+          break;
       }
     }
 
     function updateTranscript(text) {
-      if (!text) return;
-      lastSpeechAt = Date.now();
-      transcriptWords.push(text);
-      if (transcriptWords.length > 200) transcriptWords = transcriptWords.slice(-200);
       const el = document.getElementById('transcript-text');
+      if (!text) return;
+      transcriptWords.push(text);
+      // Keep last 200 words
+      if (transcriptWords.length > 200) transcriptWords = transcriptWords.slice(-200);
       const last20 = transcriptWords.slice(-20).join(' ');
       const rest = transcriptWords.slice(0, -20).join(' ');
       el.innerHTML = `<span style="opacity:0.4">${rest}</span> <span class="word-new">${last20}</span>`;
@@ -492,20 +420,21 @@
 
     function updateTopic(topic, changed, questions, factChecks) {
       document.getElementById('topic-badge').textContent = topic || 'Detecting...';
-      if (topic && !sessionData.topics.includes(topic)) sessionData.topics.push(topic);
 
       if (changed || questions?.length) {
         const body = document.getElementById('questions-body');
         const qs = questions || [];
         document.getElementById('q-count').textContent = qs.length;
-        for (const q of qs) { if (!sessionData.questions.includes(q)) sessionData.questions.push(q); }
 
         if (qs.length) {
           body.classList.add('new-topic-flash');
           setTimeout(() => body.classList.remove('new-topic-flash'), 1000);
-          body.innerHTML = qs.map(q => `<div class="question-item">${q}</div>`).join('');
+          body.innerHTML = qs.map(q =>
+            `<div class="question-item">${q}</div>`
+          ).join('');
         }
 
+        // Show research loading
         if (changed) {
           document.getElementById('research-body').innerHTML =
             `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"...</div>`;
@@ -518,7 +447,6 @@
       document.getElementById('research-body').innerHTML =
         `<div class="research-source">${source} · ${topic}</div>
          <div class="research-text">${research}</div>`;
-      sessionData.researchCards.push({ topic, research, source, timestamp: Date.now() });
     }
 
     function addFactCheck(claim, result, source) {
@@ -527,110 +455,34 @@
       div.className = 'fact-item';
       div.innerHTML = `<div class="fact-claim">⚠ Fact Check: "${claim}"</div><div class="fact-result">${result}</div>`;
       body.insertBefore(div, body.firstChild);
-      sessionData.factChecks.push({ claim, result, source });
     }
 
-    // ── Feature 2: Guest brief in app ──────────────────────────────────────
-    function renderGuestBrief(data) {
-      document.getElementById('brief-guest-name').textContent = data.name || 'Guest';
-      const works = (data.key_works || []).map(w => `<li>${w}</li>`).join('');
-      const qs = (data.suggested_questions || []).map(q => `<li>${q}</li>`).join('');
-      document.getElementById('brief-body').innerHTML = `
-        <div class="brief-section"><h5>Bio</h5><p>${data.bio || ''}</p></div>
-        <div class="brief-section"><h5>Key Works</h5><ul>${works}</ul></div>
-        <div class="brief-section"><h5>Recent Activity</h5><p>${data.recent_activity || ''}</p></div>
-        <div class="brief-section"><h5>Suggested Questions</h5><ul>${qs}</ul></div>`;
-    }
-
-    function toggleGuestBrief() {
-      const panel = document.getElementById('guest-brief-panel');
-      panel.classList.toggle('visible');
-    }
-
-    // ── Feature 3: Export Show Notes ───────────────────────────────────────
-    function exportShowNotes() {
-      if (!sessionId) { toast('No active session to export.'); return; }
-      // First save session, then export
-      fetch(`/api/session/${sessionId}/export`)
-        .then(r => r.blob())
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `show-notes-${sessionId}.md`;
-          a.click();
-          URL.revokeObjectURL(url);
-          toast('Show notes exported!');
-        })
-        .catch(() => {
-          // Fallback: build locally
-          exportShowNotesLocally();
-        });
-    }
-
-    function exportShowNotesLocally() {
-      const dur = sessionData.startTime ? Math.floor((Date.now() - sessionData.startTime) / 1000) : 0;
-      const durStr = `${Math.floor(dur/60)}m ${dur%60}s`;
-      const dateStr = new Date().toISOString().split('T')[0];
-      const guest = document.getElementById('guest-name')?.value || 'N/A';
-      const show = document.getElementById('show-name')?.value || 'My Podcast';
-      const host = document.getElementById('host-name')?.value || 'Host';
-      const notes = document.getElementById('episode-notes')?.value || '';
-
-      let md = `# Show Notes – ${show}\n\n`;
-      md += `**Guest:** ${guest}\n**Host:** ${host}\n**Date:** ${dateStr}\n**Duration:** ${durStr}\n\n---\n\n`;
-      md += `## Key Topics Discussed\n\n`;
-      (sessionData.topics.length ? sessionData.topics : ['(none detected)']).forEach(t => md += `- ${t}\n`);
-      md += `\n## Research Highlights\n\n`;
-      sessionData.researchCards.slice(0,5).forEach(c => {
-        md += `### ${c.topic}\n${c.research}\n*Source: ${c.source}*\n\n`;
-      });
-      md += `## Fact-Checks\n\n`;
-      sessionData.factChecks.slice(0,5).forEach(fc => {
-        md += `**Claim:** ${fc.claim}\n${fc.result}\n\n`;
-      });
-      md += `## Best Questions\n\n`;
-      (sessionData.questions.length ? sessionData.questions.slice(0,5) : ['(none recorded)']).forEach(q => md += `- ${q}\n`);
-      md += `\n## Host Notes\n\n> *(Add your notes here)*\n\n---\n*Generated by PodPal*`;
-
-      const blob = new Blob([md], {type: 'text/markdown'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `show-notes-${dateStr}-${guest.replace(/\s+/g,'-').toLowerCase()}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast('Show notes exported!');
-    }
-
-    // ── Mic control ────────────────────────────────────────────────────────
     async function toggleMic() {
-      if (!sessionId) { toast('Please complete setup first.'); showSetup(); return; }
-      if (isListening) { stopListening(); saveSession(); }
-      else { startListening(); }
-    }
-
-    async function startListening() {
-      if (USE_DEEPGRAM) startDeepgram();
-      else startWebSpeech();
-    }
-
-    async function saveSession() {
-      if (!sessionId) return;
-      try {
-        await fetch(`/session/${sessionId}/save`, { method: 'POST' });
-        toast('Session saved to history.');
-      } catch (e) {
-        console.error('Session save failed:', e);
+      if (!sessionId) {
+        toast('Please complete setup first.');
+        showSetup();
+        return;
+      }
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
       }
     }
 
-    // ── Feature 4: Web Speech reliability ─────────────────────────────────
+    async function startListening() {
+      if (USE_DEEPGRAM) {
+        startDeepgram();
+      } else {
+        startWebSpeech();
+      }
+    }
+
+    // ── Web Speech API ─────────────────────────────────────────────────
     function startWebSpeech() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        toast('⚠ Web Speech API not supported. Use Chrome.');
-        setMicIndicator('error');
+        toast('⚠ Web Speech API not supported. Use Chrome or Edge.');
         return;
       }
 
@@ -642,108 +494,63 @@
 
       recognition.onstart = () => {
         isListening = true;
-        lastSpeechAt = Date.now();
         setStatus('live', 'Live · Web Speech');
-        setMicIndicator('listening');
         document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
-        document.getElementById('mic-btn').classList.replace('btn-primary', 'btn-danger');
-        clearSpeechStopTimer();
+        document.getElementById('mic-btn').classList.remove('btn-primary');
+        document.getElementById('mic-btn').classList.add('btn-danger');
         toast('Listening via Web Speech API - speak naturally');
       };
 
       recognition.onresult = (event) => {
-        lastSpeechAt = Date.now();
-        clearSpeechStopTimer();
-        let finalText = '', interimText = '';
+        let finalText = '';
+        let interimText = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
-          if (result.isFinal) finalText += result[0].transcript + ' ';
-          else interimText += result[0].transcript;
+          if (result.isFinal) {
+            finalText += result[0].transcript + ' ';
+          } else {
+            interimText += result[0].transcript;
+          }
         }
 
+        // Show interim in transcript strip immediately
         if (interimText) {
           const el = document.getElementById('transcript-text');
           const last = transcriptWords.slice(-30).join(' ');
           el.innerHTML = `<span style="opacity:0.4">${transcriptWords.slice(0,-30).join(' ')}</span> <span class="word-new">${last}</span> <span style="opacity:0.35;font-style:italic">${interimText}</span>`;
         }
 
+        // Send final transcript to backend for intelligence
         if (finalText.trim() && ws?.readyState === WebSocket.OPEN) {
           const words = finalText.trim().split(' ').map(w => ({ word: w }));
           ws.send(JSON.stringify({ type: 'transcript', text: finalText.trim(), words }));
-          updateTranscript(finalText.trim());
         }
       };
 
       recognition.onerror = (e) => {
         if (e.error === 'not-allowed') {
-          toast('Microphone access denied. Please allow mic access.');
-          setMicIndicator('error');
-          isListening = false;
-        } else if (e.error === 'no-speech') {
-          startSpeechStopTimer();
-        } else {
+          toast('Microphone access denied. Please allow mic access and try again.');
+        } else if (e.error !== 'no-speech') {
           toast('Speech recognition error: ' + e.error);
-          setMicIndicator('error');
         }
       };
 
       recognition.onend = () => {
-        // Feature 4: Auto-restart if should still be listening
+        // Auto-restart if still supposed to be listening
         if (isListening) {
-          setMicIndicator('error');
-          setTimeout(() => {
-            if (isListening) {
-              try { recognition.start(); setMicIndicator('listening'); }
-              catch (e) { console.error('Restart failed:', e); }
-            }
-          }, 500);
-        } else {
-          setMicIndicator('off');
+          recognition.start();
         }
-        startSpeechStopTimer();
       };
 
-      try { recognition.start(); }
-      catch (e) { toast('Could not start recognition: ' + e.message); }
+      recognition.start();
     }
 
-    function startSpeechStopTimer() {
-      clearSpeechStopTimer();
-      if (!isListening) return;
-      speechStopTimer = setTimeout(() => {
-        const secsSinceSpeech = (Date.now() - lastSpeechAt) / 1000;
-        if (secsSinceSpeech >= 5 && isListening) {
-          document.getElementById('reconnect-btn').classList.add('visible');
-          setMicIndicator('error');
-        }
-      }, RECONNECT_AFTER_MS);
-    }
-
-    function clearSpeechStopTimer() {
-      if (speechStopTimer) { clearTimeout(speechStopTimer); speechStopTimer = null; }
-      document.getElementById('reconnect-btn').classList.remove('visible');
-    }
-
-    function reconnectSpeech() {
-      if (!isListening) return;
-      toast('Reconnecting speech...');
-      if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
-      clearSpeechStopTimer();
-      setTimeout(() => startWebSpeech(), 300);
-    }
-
-    function setMicIndicator(state) {
-      const el = document.getElementById('mic-indicator');
-      el.className = 'mic-indicator';
-      if (state === 'listening') el.classList.add('listening');
-      else if (state === 'error') el.classList.add('error');
-    }
-
-    // ── Deepgram ───────────────────────────────────────────────────────────
+    // ── Deepgram streaming ─────────────────────────────────────────────
     async function startDeepgram() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
         deepgramSocket = new WebSocket(
           'wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&language=en',
           ['token', DEEPGRAM_API_KEY]
@@ -758,9 +565,9 @@
           mediaRecorder.start(250);
           isListening = true;
           setStatus('live', 'Live · Deepgram');
-          setMicIndicator('listening');
           document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
-          document.getElementById('mic-btn').classList.replace('btn-primary', 'btn-danger');
+          document.getElementById('mic-btn').classList.remove('btn-primary');
+          document.getElementById('mic-btn').classList.add('btn-danger');
           toast('Listening via Deepgram Nova-2');
         };
 
@@ -775,28 +582,30 @@
           }
         };
 
-        deepgramSocket.onerror = () => { toast('Deepgram connection error'); setMicIndicator('error'); };
+        deepgramSocket.onerror = () => toast('Deepgram connection error');
+
       } catch (err) {
         toast('Microphone access denied: ' + err.message);
-        setMicIndicator('error');
       }
     }
 
     function stopListening() {
-      clearSpeechStopTimer();
+      // Stop Web Speech
       if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+      // Stop Deepgram
       if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
       if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
 
       isListening = false;
       setStatus('connected', 'Connected');
-      setMicIndicator('off');
       document.getElementById('mic-btn').textContent = '🎙 Start Listening';
-      document.getElementById('mic-btn').classList.replace('btn-danger', 'btn-primary');
-      document.getElementById('reconnect-btn').classList.remove('visible');
+      document.getElementById('mic-btn').classList.add('btn-primary');
+      document.getElementById('mic-btn').classList.remove('btn-danger');
     }
 
     function setStatus(state, label) {
+      const dot = document.getElementById('status-dot');
+      dot.className = 'status-dot' + (state === 'live' ? ' live' : '');
       document.getElementById('status-label').textContent = label;
     }
 
@@ -806,6 +615,9 @@
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 3500);
     }
+
+    // Auto-show setup on load
+    window.onload = () => showSetup();
   </script>
 </body>
 </html>

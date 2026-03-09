@@ -1,0 +1,33 @@
+{
+  "session_id": "test_123",
+  "start_time": 1773039155.558851,
+  "end_time": 1773039155.558892,
+  "duration_seconds": 0,
+  "metadata": {
+    "guest": "Ray Kurzweil",
+    "show": "Test Show",
+    "host": "Mic",
+    "date": "2026-03-09",
+    "notes": "Singularity"
+  },
+  "topics_detected": [
+    "AI singularity",
+    "transhumanism"
+  ],
+  "transcript_snippets": [
+    "hello world"
+  ],
+  "research_cards": [
+    {
+      "topic": "AI singularity",
+      "research": "Ray Kurzweil predicts singularity by 2045",
+      "source": "AI Knowledge",
+      "timestamp": 1773039155.5588531
+    }
+  ],
+  "fact_check_alerts": [],
+  "suggested_questions": [
+    "What is the timeline for AGI?",
+    "How will nanotech change medicine?"
+  ]
+}
