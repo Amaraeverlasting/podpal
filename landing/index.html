@@ -721,6 +721,10 @@
 
     // Checkout — redirects to Stripe or Calendly
     async function startCheckout(tier) {
+      if (tier === 'network') {
+        window.location.href = 'https://calendly.com/mic-mannmade';
+        return;
+      }
       const btn = event && event.target;
       const originalText = btn ? btn.textContent : '';
       if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
@@ -728,12 +732,12 @@
         const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ tier, success_url: window.location.origin + '/?checkout=success', cancel_url: window.location.href })
+          body: JSON.stringify({ tier })
         });
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
-        if (data.redirect_url) {
-          window.location.href = data.redirect_url;
+        if (data.redirect) {
+          window.location.href = data.redirect;
         } else {
           throw new Error('No redirect URL');
         }
