@@ -267,6 +267,38 @@
     .flash { animation: flash 0.8s ease; }
     @keyframes flash { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
 
+    /* ── Volume Meter ── */
+    .vol-bar { display:inline-block; width:3px; border-radius:2px; background:var(--green); margin:0 1px; transition:height 0.1s; }
+
+    /* ── Point item border transition for copy flash ── */
+    .point-item { border-bottom: 1px solid var(--border) !important; transition: opacity 0.15s, border-bottom-color 0.1s; }
+
+    /* ── Guest Intel Card ── */
+    #guest-intel-card {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    #guest-intel-card .intel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; user-select: none;
+    }
+    #guest-intel-card .intel-name { font-weight: 600; color: var(--text); }
+    #guest-intel-card .intel-toggle { font-size: 10px; color: var(--muted); }
+    #guest-intel-card .intel-body {
+      margin-top: 8px;
+      color: rgba(232,232,240,0.75);
+      line-height: 1.55;
+      font-size: 11px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    #guest-intel-card .intel-body::-webkit-scrollbar { width: 2px; }
+    #guest-intel-card .intel-body::-webkit-scrollbar-thumb { background: var(--border); }
+
     /* ── Session Summary Modal ── */
     #summary-modal {
       position: fixed; inset: 0;
@@ -377,7 +409,15 @@
   <header>
     <div class="logo">Pod<span>Pal</span></div>
     <div class="status-dot" id="status-dot"></div>
+    <div id="vol-meter" style="display:flex;align-items:flex-end;height:16px;gap:1px;opacity:0;">
+      <span class="vol-bar" style="height:4px;"></span>
+      <span class="vol-bar" style="height:8px;"></span>
+      <span class="vol-bar" style="height:12px;"></span>
+      <span class="vol-bar" style="height:6px;"></span>
+      <span class="vol-bar" style="height:10px;"></span>
+    </div>
     <div class="status-label" id="status-label">Ready</div>
+    <span id="session-timer" style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;display:none;">00:00</span>
     <div class="topic-badge" id="topic-badge">Waiting for topic...</div>
     <div class="header-right">
       <button class="btn btn-outline" onclick="showSetup()">Setup</button>
@@ -394,6 +434,13 @@
         <span class="panel-count" id="q-count"></span>
       </div>
       <div class="panel-body" id="questions-body">
+        <div id="guest-intel-card" style="display:none;">
+          <div class="intel-header" onclick="toggleGuestIntel()">
+            <span class="intel-name" id="guest-intel-name">👤 Guest</span>
+            <span class="intel-toggle" id="guest-intel-toggle">▼ hide</span>
+          </div>
+          <div class="intel-body" id="guest-intel-body"></div>
+        </div>
         <div class="empty-state">Start talking.<br>PodPal will suggest follow-up questions as the conversation moves.</div>
       </div>
     </div>
@@ -487,7 +534,18 @@
       }
 
       ws = new WebSocket(`${BACKEND_URL}/ws/${sessionId}`);
-      ws.onopen    = () => { setStatus('connected','Connected'); toast('Session ready — hit Start Listening'); };
+      ws.onopen    = () => {
+        setStatus('connected','Connected');
+        toast('Session ready — hit Start Listening');
+        // Show guest intel card if we have both guest name and notes
+        const guestName = document.getElementById('guest-name').value.trim();
+        const guestNotes = document.getElementById('episode-notes').value.trim();
+        if (guestName && guestNotes) {
+          document.getElementById('guest-intel-name').textContent = `👤 ${guestName}`;
+          document.getElementById('guest-intel-body').textContent = guestNotes;
+          document.getElementById('guest-intel-card').style.display = 'block';
+        }
+      };
       ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
       ws.onerror   = () => toast('Connection issue — retrying...');
       ws.onclose   = () => { if (isListening) setTimeout(startSession, 1500); };
@@ -525,10 +583,13 @@
         document.getElementById('q-count').textContent = qs.length ? `${qs.length} points` : '';
 
         if (qs.length) {
-          body.innerHTML = qs.map((q, i) =>
-            `<div class="point-item">
+          // Preserve guest intel card across re-renders
+          const guestCard = document.getElementById('guest-intel-card');
+          const guestCardHTML = guestCard ? guestCard.outerHTML : '';
+          body.innerHTML = guestCardHTML + qs.map((q, i) =>
+            `<div class="point-item" data-point="${q.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}" onclick="copyTalkingPoint(this)">
               <span class="point-num">${i + 1}</span>
-              <span class="point-text">${q}</span>
+              <span class="point-text">${q}</span><span class="copy-hint" style="opacity:0.3;font-size:10px;margin-left:6px;">⎘</span>
             </div>`
           ).join('');
           body.classList.add('flash');
@@ -582,6 +643,12 @@
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) { toast('Use Chrome or Edge for mic support.'); return; }
 
+      // Get mic stream for volume meter (parallel to SpeechRecognition)
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        volStream = stream;
+        startVolMeter(stream);
+      }).catch(() => {});
+
       recognition = new SR();
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -590,6 +657,8 @@
       recognition.onstart = () => {
         isListening = true;
         setStatus('live', 'Live');
+        startTimer();
+        document.getElementById('session-timer').style.display = 'inline';
         document.getElementById('mic-btn').textContent = '⏹ Stop';
         document.getElementById('mic-btn').className = 'btn btn-danger';
         toast('Listening — speak naturally');
@@ -629,8 +698,12 @@
           mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
           mediaRecorder.ondataavailable = (e) => { if (deepgramSocket.readyState === WebSocket.OPEN) deepgramSocket.send(e.data); };
           mediaRecorder.start(250);
+          volStream = stream;
+          startVolMeter(stream);
           isListening = true;
           setStatus('live', 'Live');
+          startTimer();
+          document.getElementById('session-timer').style.display = 'inline';
           document.getElementById('mic-btn').textContent = '⏹ Stop';
           document.getElementById('mic-btn').className = 'btn btn-danger';
         };
@@ -654,7 +727,11 @@
       if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
       if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
       if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
+      if (volStream) { volStream.getTracks().forEach(t => t.stop()); volStream = null; }
+      stopTimer();
+      stopVolMeter();
       isListening = false;
+      document.getElementById('session-timer').style.display = 'none';
       setStatus('connected', 'Connected');
       document.getElementById('mic-btn').textContent = '🎙 Start Listening';
       document.getElementById('mic-btn').className = 'btn btn-primary';
@@ -733,6 +810,95 @@
       el.textContent = msg;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    // ── Session Timer ─────────────────────────────────────────────
+    let sessionTimerInterval = null;
+    let sessionTimerSeconds = 0;
+
+    function startTimer() {
+      sessionTimerSeconds = 0;
+      const el = document.getElementById('session-timer');
+      el.textContent = '00:00';
+      sessionTimerInterval = setInterval(() => {
+        sessionTimerSeconds++;
+        const h = Math.floor(sessionTimerSeconds / 3600);
+        const m = Math.floor((sessionTimerSeconds % 3600) / 60);
+        const s = sessionTimerSeconds % 60;
+        if (h > 0) {
+          el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        } else {
+          el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(sessionTimerInterval);
+      sessionTimerInterval = null;
+      document.getElementById('session-timer').textContent = '00:00';
+    }
+
+    // ── Volume Meter ──────────────────────────────────────────────
+    let audioCtx = null;
+    let analyserNode = null;
+    let volAnimFrame = null;
+    let volStream = null;
+
+    function startVolMeter(stream) {
+      const meter = document.getElementById('vol-meter');
+      meter.style.opacity = '1';
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyserNode);
+        const bars = meter.querySelectorAll('.vol-bar');
+        const dataArr = new Uint8Array(analyserNode.frequencyBinCount);
+        function animate() {
+          if (!isListening) return;
+          analyserNode.getByteFrequencyData(dataArr);
+          const avg = Array.from(dataArr.slice(0, 16)).reduce((a,b) => a+b, 0) / 16;
+          const level = avg / 255;
+          bars.forEach((bar) => {
+            const variation = (Math.random() * 0.5 - 0.25);
+            const h = Math.max(2, Math.min(14, 2 + (level + variation) * 12));
+            bar.style.height = h + 'px';
+          });
+          volAnimFrame = requestAnimationFrame(animate);
+        }
+        animate();
+      } catch(e) {}
+    }
+
+    function stopVolMeter() {
+      const meter = document.getElementById('vol-meter');
+      meter.style.opacity = '0';
+      if (volAnimFrame) { cancelAnimationFrame(volAnimFrame); volAnimFrame = null; }
+      if (analyserNode) { try { analyserNode.disconnect(); } catch(e) {} analyserNode = null; }
+      if (audioCtx) { try { audioCtx.close(); } catch(e) {} audioCtx = null; }
+      if (meter) meter.querySelectorAll('.vol-bar').forEach(b => b.style.height = '4px');
+    }
+
+    // ── Talking Point Click-to-Copy ───────────────────────────────
+    function copyTalkingPoint(el) {
+      const text = el.dataset.point;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        el.style.borderBottomColor = 'var(--green)';
+        setTimeout(() => el.style.borderBottomColor = '', 600);
+        toast('Copied to clipboard');
+      }).catch(() => toast('Copy failed'));
+    }
+
+    // ── Guest Intel Toggle ────────────────────────────────────────
+    function toggleGuestIntel() {
+      const body = document.getElementById('guest-intel-body');
+      const toggle = document.getElementById('guest-intel-toggle');
+      const isHidden = body.style.display === 'none';
+      body.style.display = isHidden ? '' : 'none';
+      toggle.textContent = isHidden ? '▼ hide' : '▶ show';
     }
 
     // ── Feature 1: Remember setup in localStorage ─────────────────
