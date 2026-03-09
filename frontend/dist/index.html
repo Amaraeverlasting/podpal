@@ -288,8 +288,8 @@
         <input class="form-input" id="host-topics" placeholder="AI, Africa tech, entrepreneurship" />
       </div>
       <div class="form-group">
-        <label class="form-label">Today's Guest</label>
-        <input class="form-input" id="guest-name" placeholder="Guest name (optional)" />
+        <label class="form-label">Today's Guest <span id="guest-loading" style="color:var(--accent2);font-size:10px;display:none;">fetching intel...</span></label>
+        <input class="form-input" id="guest-name" placeholder="Type guest name — PodPal will load their bio" />
       </div>
       <div class="form-group">
         <label class="form-label">Episode Notes</label>
@@ -560,7 +560,85 @@
       setTimeout(() => el.classList.remove('show'), 3500);
     }
 
-    window.onload = () => showSetup();
+    // ── Feature 1: Remember setup in localStorage ─────────────────
+    function saveSetup() {
+      localStorage.setItem('podpal_setup', JSON.stringify({
+        name:   document.getElementById('host-name').value,
+        show:   document.getElementById('show-name').value,
+        topics: document.getElementById('host-topics').value,
+      }));
+    }
+
+    function loadSetup() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('podpal_setup') || '{}');
+        if (saved.name)   document.getElementById('host-name').value   = saved.name;
+        if (saved.show)   document.getElementById('show-name').value   = saved.show;
+        if (saved.topics) document.getElementById('host-topics').value = saved.topics;
+      } catch(e) {}
+    }
+
+    // ── Feature 2: Keyboard shortcut - Space to start/stop ────────
+    document.addEventListener('keydown', (e) => {
+      // Space bar - only when not typing in an input
+      if (e.code === 'Space' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        if (sessionId) toggleMic();
+      }
+    });
+
+    // ── Feature 3: Guest pre-load ─────────────────────────────────
+    let guestLoadTimeout = null;
+
+    document.getElementById('guest-name').addEventListener('input', (e) => {
+      clearTimeout(guestLoadTimeout);
+      const name = e.target.value.trim();
+      if (name.length < 3) {
+        document.getElementById('guest-loading').style.display = 'none';
+        return;
+      }
+      document.getElementById('guest-loading').style.display = 'inline';
+      guestLoadTimeout = setTimeout(() => fetchGuestIntel(name), 900);
+    });
+
+    async function fetchGuestIntel(name) {
+      const notesEl = document.getElementById('episode-notes');
+      const current = notesEl.value;
+      if (current && !current.startsWith('Loading')) return; // Don't overwrite manual notes
+
+      notesEl.value = `Loading intel on ${name}...`;
+      try {
+        const res = await fetch('/api/guest-intel', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ guest_name: name })
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const intel = data.intel || data.bio || data.summary || '';
+        if (intel) {
+          notesEl.value = intel;
+          toast(`Guest intel loaded for ${name}`);
+        } else {
+          notesEl.value = '';
+        }
+      } catch(e) {
+        notesEl.value = '';
+      } finally {
+        document.getElementById('guest-loading').style.display = 'none';
+      }
+    }
+
+    window.onload = () => {
+      loadSetup();
+      showSetup();
+      // Auto-save setup fields on change
+      ['host-name','show-name','host-topics'].forEach(id => {
+        document.getElementById(id).addEventListener('change', saveSetup);
+      });
+      // Space bar hint in header
+      toast('Tip: press Space to start/stop recording');
+    };
   </script>
 </body>
 </html>
