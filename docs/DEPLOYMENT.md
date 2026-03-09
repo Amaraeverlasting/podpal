@@ -1,9 +1,9 @@
 # PodPal Deployment Guide
-## Domain: podpal.fm
+## Domain: podpal.show
 
 ---
 
-## Step 1: Register podpal.fm
+## Step 1: Register podpal.show
 - Register at namecheap.com
 - Cost: ~$20-30/year
 
@@ -21,13 +21,13 @@
 
 ---
 
-## Step 3: Connect podpal.fm to Railway
+## Step 3: Connect podpal.show to Railway
 
 ### In Railway dashboard:
 1. Go to your service → Settings → Domains
 2. Click "Add Custom Domain"
-3. Enter: `podpal.fm`
-4. Enter: `app.podpal.fm`
+3. Enter: `podpal.show`
+4. Enter: `app.podpal.show`
 5. Railway shows you CNAME values to add
 
 ### In Namecheap DNS (Advanced DNS tab):
@@ -44,18 +44,18 @@ DNS propagates in 5-30 minutes.
 ---
 
 ## Step 4: Routing (already configured in main.py)
-- `podpal.fm` → landing page
-- `podpal.fm/app` → live PodPal tool
-- `podpal.fm/history` → session history
-- `podpal.fm/api/*` → backend API
-- `podpal.fm/health` → health check
+- `podpal.show` → landing page
+- `podpal.show/app` → live PodPal tool
+- `podpal.show/history` → session history
+- `podpal.show/api/*` → backend API
+- `podpal.show/health` → health check
 
 ---
 
 ## Step 5: Verify
-- `curl https://podpal.fm/health` → should return `{"status":"ok"}`
-- Open `https://podpal.fm` → landing page
-- Open `https://podpal.fm/app` → PodPal app (mic works on HTTPS!)
+- `curl https://podpal.show/health` → should return `{"status":"ok"}`
+- Open `https://podpal.show` → landing page
+- Open `https://podpal.show/app` → PodPal app (mic works on HTTPS!)
 
 ---
 

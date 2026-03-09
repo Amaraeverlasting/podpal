@@ -9,400 +9,1175 @@
       --bg: #0a0a0f;
       --surface: #13131a;
       --surface2: #1a1a24;
+      --surface3: #1f1f2e;
       --border: rgba(255,255,255,0.07);
       --accent: #7c6df0;
       --accent2: #4ecdc4;
       --gold: #f0c040;
+      --amber: #f59e0b;
       --red: #ff5c5c;
       --green: #4ade80;
       --text: #e8e8f0;
       --muted: #6b7280;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
-      display: grid;
-      grid-template-rows: 56px 1fr;
       overflow: hidden;
     }
 
-    /* Header */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 16px;
-    }
-    .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
-    .logo span { color: var(--accent2); }
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--muted);
-      transition: background 0.3s;
-    }
-    .status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.5 } }
-    .status-label { font-size: 13px; color: var(--muted); }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-    .btn {
-      padding: 7px 16px; border-radius: 8px; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #6a5de0; }
-    .btn-danger { background: rgba(255,92,92,0.15); color: var(--red); border: 1px solid rgba(255,92,92,0.3); }
-    .btn-danger:hover { background: rgba(255,92,92,0.25); }
-    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--surface2); }
-    .topic-badge {
-      background: rgba(124,109,240,0.15);
-      border: 1px solid rgba(124,109,240,0.3);
-      color: var(--accent);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .hidden { display: none !important; }
 
-    /* Main grid */
-    main {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      grid-template-rows: 1fr 160px;
-      gap: 1px;
-      background: var(--border);
-      overflow: hidden;
-    }
-
-    /* Panel base */
-    .panel {
+    /* ──────────────────────────────────────────────────────────────
+       SETUP SCREEN
+    ────────────────────────────────────────────────────────────── */
+    #setup-screen {
+      position: fixed;
+      inset: 0;
       background: var(--bg);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .panel-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
+      justify-content: center;
+      z-index: 100;
     }
-    .panel-title {
+
+    .setup-card {
+      width: 420px;
+      max-width: 95vw;
+    }
+
+    .setup-logo {
+      font-size: 30px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+    }
+
+    .setup-logo span { color: var(--accent); }
+
+    .setup-tagline {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 44px;
+      line-height: 1.5;
+    }
+
+    .setup-field { margin-bottom: 22px; }
+
+    .setup-label {
+      display: block;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: var(--muted);
+      margin-bottom: 8px;
     }
-    .panel-badge {
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: var(--surface2);
-      color: var(--muted);
-    }
-    .panel-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-    .panel-body::-webkit-scrollbar { width: 3px; }
-    .panel-body::-webkit-scrollbar-thumb { background: var(--surface2); }
 
-    /* Research panel */
-    #research-panel { grid-row: 1; grid-column: 2; }
-    .research-source {
-      font-size: 10px;
+    .setup-label-optional {
+      font-size: 11px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
       color: var(--muted);
-      margin-bottom: 10px;
+      opacity: 0.6;
+    }
+
+    .setup-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .setup-input:focus { border-color: var(--accent); }
+    .setup-input::placeholder { color: var(--muted); }
+
+    .guest-intel-link {
+      display: inline-block;
+      margin-top: 9px;
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      opacity: 0.65;
+      transition: opacity 0.2s;
+    }
+
+    .guest-intel-link:hover { opacity: 1; }
+
+    .btn-start {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 700;
+      font-family: inherit;
+      padding: 16px;
+      cursor: pointer;
+      margin-top: 32px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-start:hover {
+      background: #6a5de0;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(124,109,240,0.35);
+    }
+
+    .btn-start:active { transform: translateY(0); }
+
+    /* ──────────────────────────────────────────────────────────────
+       RECORDING SCREEN SHELL
+    ────────────────────────────────────────────────────────────── */
+    #recording-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       TOP BAR
+    ────────────────────────────────────────────────────────────── */
+    #top-bar {
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 6px;
+      padding: 0 20px;
+      gap: 0;
+      flex-shrink: 0;
     }
-    .research-source::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
-    .research-text {
+
+    .topbar-logo {
+      font-size: 15px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.5px;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+
+    .topbar-logo span { color: var(--accent); }
+
+    .topbar-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .topbar-show {
       font-size: 13px;
-      line-height: 1.7;
+      font-weight: 600;
       color: var(--text);
-      white-space: pre-wrap;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
     }
-    .research-loading {
+
+    .topbar-guest {
+      font-size: 13px;
+      color: var(--muted);
+      margin-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
+
+    #topbar-topic {
+      background: rgba(124,109,240,0.12);
+      border: 1px solid rgba(124,109,240,0.25);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 12px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Also used by legacy JS — hidden, replaced by topbar-topic */
+    .topic-badge { display: none; }
+
+    #timer-display {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    #rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 18px;
+      flex-shrink: 0;
+    }
+
+    .rec-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+
+    .rec-dot.live {
+      background: var(--red);
+      box-shadow: 0 0 7px var(--red);
+      animation: rec-pulse 1.5s infinite;
+    }
+
+    @keyframes rec-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.82); }
+    }
+
+    .rec-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .rec-label.live { color: var(--red); }
+
+    /* ──────────────────────────────────────────────────────────────
+       FACT-CHECK AMBER BANNER
+    ────────────────────────────────────────────────────────────── */
+    #factcheck-banner {
+      background: rgba(245,158,11,0.10);
+      border-bottom: 1px solid rgba(245,158,11,0.22);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--amber);
+      flex-shrink: 0;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    #factcheck-text { flex: 1; }
+
+    .fc-dismiss {
+      background: none;
+      border: none;
+      color: var(--amber);
+      cursor: pointer;
+      font-size: 15px;
+      opacity: 0.7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: opacity 0.2s;
+      line-height: 1;
+    }
+
+    .fc-dismiss:hover { opacity: 1; }
+
+    /* ──────────────────────────────────────────────────────────────
+       MAIN AREA
+    ────────────────────────────────────────────────────────────── */
+    #main-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       LEFT SIDEBAR — QUESTIONS
+    ────────────────────────────────────────────────────────────── */
+    #questions-panel {
+      width: 255px;
+      min-width: 255px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease, min-width 0.3s ease;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    #questions-panel.collapsed {
+      width: 40px;
+      min-width: 40px;
+    }
+
+    .sidebar-header {
+      padding: 12px 12px 12px 14px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 3px 4px;
+      flex-shrink: 0;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+
+    .sidebar-toggle-btn:hover { color: var(--text); }
+
+    .sidebar-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    #q-count {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--muted);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    #questions-panel.collapsed .sidebar-title,
+    #questions-panel.collapsed #q-count { display: none; }
+
+    #questions-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    #questions-body::-webkit-scrollbar { width: 2px; }
+    #questions-body::-webkit-scrollbar-thumb { background: var(--surface2); }
+
+    #questions-panel.collapsed #questions-body { display: none; }
+
+    .question-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 11px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .question-item:hover {
+      border-color: rgba(124,109,240,0.35);
+      background: var(--surface3);
+    }
+
+    .question-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 14px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .question-text { flex: 1; }
+
+    .question-star {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 0;
+      flex-shrink: 0;
+      line-height: 1;
+      margin-top: 1px;
+      transition: color 0.2s;
+    }
+
+    .question-star:hover,
+    .question-star.starred { color: var(--gold); }
+
+    /* ──────────────────────────────────────────────────────────────
+       CENTER — RESEARCH CARDS
+    ────────────────────────────────────────────────────────────── */
+    #cards-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px 20px 0;
+      gap: 0;
+    }
+
+    #research-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      padding-bottom: 16px;
+    }
+
+    #research-body::-webkit-scrollbar { width: 3px; }
+    #research-body::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+    .research-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      color: #1a1a2e;
+      animation: slideInCard 0.3s ease;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .research-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    }
+
+    @keyframes slideInCard {
+      from { transform: translateX(32px); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+
+    .card-topic-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #7c6df0;
+      background: rgba(124,109,240,0.10);
+      border: 1px solid rgba(124,109,240,0.20);
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-headline {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.45;
+      color: #1a1a2e;
+      margin-bottom: 10px;
+    }
+
+    .card-facts {
+      font-size: 13px;
+      line-height: 1.65;
+      color: #3a3a5c;
+      white-space: pre-wrap;
+    }
+
+    .card-footer {
+      font-size: 11px;
+      color: #8888aa;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-bookmark-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: #aaaacc;
+      transition: color 0.2s;
+      padding: 2px 4px;
+      line-height: 1;
+    }
+
+    .card-bookmark-btn:hover,
+    .card-bookmark-btn.bookmarked { color: #7c6df0; }
+
+    /* research loading / empty */
+    .research-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       color: var(--muted);
       font-size: 13px;
+      padding: 24px 0;
     }
+
     .spinner {
       width: 14px; height: 14px;
       border: 2px solid var(--surface2);
       border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
+
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Questions panel */
-    #questions-panel { grid-row: 1; grid-column: 1; }
-    .question-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      line-height: 1.5;
-      cursor: pointer;
-      transition: all 0.2s;
-      position: relative;
-    }
-    .question-item:hover { border-color: rgba(124,109,240,0.4); background: var(--surface2); }
-    .question-item::before {
-      content: "→";
-      color: var(--accent);
-      margin-right: 8px;
-      font-weight: bold;
-    }
-
-    /* Fact check */
-    .fact-item {
-      background: rgba(255,92,92,0.05);
-      border: 1px solid rgba(255,92,92,0.2);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
+    .empty-state {
+      color: var(--muted);
       font-size: 13px;
+      text-align: center;
+      padding: 48px 20px;
+      line-height: 1.7;
     }
-    .fact-claim { color: var(--red); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .fact-result { color: var(--text); line-height: 1.5; }
 
-    /* Transcript strip */
-    #transcript-panel {
-      grid-row: 2;
-      grid-column: 1 / -1;
+    /* ──────────────────────────────────────────────────────────────
+       RIGHT DRAWER — GUEST INTEL
+    ────────────────────────────────────────────────────────────── */
+    #guest-intel-drawer {
+      width: 0;
       background: var(--surface);
-      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      overflow: hidden;
+      transition: width 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
     }
-    #transcript-text {
-      font-size: 15px;
-      line-height: 1.6;
-      color: rgba(232,232,240,0.7);
-      font-family: "Georgia", serif;
-      padding: 14px 20px;
-      overflow-y: auto;
-      height: 100%;
-    }
-    .word-new { color: var(--text); font-weight: 500; }
 
-    /* Setup modal */
-    #setup-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
+    #guest-intel-drawer.open { width: 290px; }
+
+    .drawer-header {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .drawer-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+
+    .drawer-close-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+
+    .drawer-close-btn:hover { color: var(--text); }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .drawer-body::-webkit-scrollbar { width: 2px; }
+    .drawer-body::-webkit-scrollbar-thumb { background: var(--surface2); }
+
+    .guest-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      font-size: 22px;
+      margin-bottom: 12px;
     }
-    #setup-modal.hidden { display: none; }
-    .modal-box {
+
+    .guest-name-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .guest-bio-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .drawer-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 9px;
+    }
+
+    .intel-questions-list { list-style: none; }
+
+    .intel-q-item {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .intel-q-item:last-child { border-bottom: none; }
+    .intel-q-item:hover { color: var(--accent2); }
+
+    /* Tab visible when drawer closed */
+    #guest-intel-tab {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      width: 480px;
-      max-width: 95vw;
+      border-right: none;
+      border-radius: 8px 0 0 8px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      padding: 12px 7px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+      z-index: 10;
+      user-select: none;
     }
-    .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-    .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
-    .form-input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      padding: 10px 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .form-input:focus { border-color: var(--accent); }
-    textarea.form-input { resize: vertical; min-height: 80px; }
 
-    /* Notification toast */
+    #guest-intel-tab:hover {
+      color: var(--text);
+      background: var(--surface2);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       TRANSCRIPT STRIP
+    ────────────────────────────────────────────────────────────── */
+    #transcript-panel {
+      height: 58px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    #transcript-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(232,232,240,0.38);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .word-new {
+      color: rgba(232,232,240,0.72);
+      font-weight: 500;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       FLOATING ACTION BAR
+    ────────────────────────────────────────────────────────────── */
+    #float-actions {
+      position: fixed;
+      bottom: 76px;
+      right: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      z-index: 50;
+    }
+
+    .float-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .float-btn-export {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .float-btn-export:hover {
+      background: var(--surface3);
+      border-color: rgba(255,255,255,0.14);
+    }
+
+    #mic-btn {
+      background: rgba(255,92,92,0.14);
+      color: var(--red);
+      border: 1px solid rgba(255,92,92,0.3);
+    }
+
+    #mic-btn:hover {
+      background: rgba(255,92,92,0.24);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       SESSION COMPLETE SCREEN
+    ────────────────────────────────────────────────────────────── */
+    #session-complete {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .complete-card {
+      text-align: center;
+      max-width: 460px;
+      width: 95vw;
+    }
+
+    .complete-icon { font-size: 48px; margin-bottom: 20px; }
+
+    .complete-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 7px;
+    }
+
+    .complete-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .complete-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 10px;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-export-md {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      padding: 14px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: background 0.2s;
+    }
+
+    .btn-export-md:hover { background: #6a5de0; }
+
+    .btn-new-session {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 8px;
+      transition: color 0.2s;
+    }
+
+    .btn-new-session:hover { color: var(--text); }
+
+    /* ──────────────────────────────────────────────────────────────
+       TOAST
+    ────────────────────────────────────────────────────────────── */
     #toast {
       position: fixed;
       bottom: 24px;
-      right: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 18px;
+      padding: 10px 18px;
       font-size: 13px;
-      transform: translateY(80px);
       opacity: 0;
       transition: all 0.3s;
-      z-index: 200;
+      z-index: 300;
+      white-space: nowrap;
+      pointer-events: none;
     }
-    #toast.show { transform: translateY(0); opacity: 1; }
 
-    .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       MISC
+    ────────────────────────────────────────────────────────────── */
     .new-topic-flash { animation: flash 1s ease; }
-    @keyframes flash { 0%,100% { background: var(--bg) } 50% { background: rgba(124,109,240,0.08) } }
+
+    @keyframes flash {
+      0%,100% { background: var(--surface2); }
+      50%      { background: rgba(124,109,240,0.12); }
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       RESPONSIVE
+    ────────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      #questions-panel { width: 210px; min-width: 210px; }
+      #guest-intel-drawer.open { width: 260px; }
+    }
+
+    @media (max-width: 680px) {
+      #questions-panel { width: 40px; min-width: 40px; }
+      #questions-panel .sidebar-title,
+      #questions-panel #q-count { display: none; }
+      #questions-panel #questions-body { display: none; }
+      #float-actions { right: 14px; bottom: 68px; }
+      .complete-stats { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Setup Modal -->
-  <div id="setup-modal">
-    <div class="modal-box">
-      <div class="modal-title">🎙️ PodPal Setup</div>
-      <div class="modal-sub">Tell PodPal about you and your show</div>
-      <div class="form-group">
-        <label class="form-label">Your Name</label>
-        <input class="form-input" id="host-name" placeholder="e.g. Mic Mann" />
+  <!-- ── Hidden legacy elements — IDs preserved for JS ─────────── -->
+  <input type="hidden" id="host-name" value="Host" />
+  <input type="hidden" id="episode-notes" />
+  <div id="status-dot"   style="display:none;"></div>
+  <div id="status-label" style="display:none;"></div>
+  <div id="topic-badge"  style="display:none;"></div>
+  <span id="research-source" style="display:none;"></span>
+
+  <!-- ── SETUP SCREEN ──────────────────────────────────────────── -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <div class="setup-logo">Pod<span>Pal</span></div>
+      <div class="setup-tagline">Real-time AI co-pilot for live podcast recording</div>
+
+      <div class="setup-field">
+        <label class="setup-label" for="show-name">Show Name</label>
+        <input class="setup-input" id="show-name"
+               placeholder="e.g. The Singularity Podcast"
+               autocomplete="off" />
       </div>
-      <div class="form-group">
-        <label class="form-label">Show Name</label>
-        <input class="form-input" id="show-name" placeholder="e.g. The Singularity Podcast" />
+
+      <div class="setup-field">
+        <label class="setup-label" for="guest-name">
+          Guest Name <span class="setup-label-optional">(optional)</span>
+        </label>
+        <input class="setup-input" id="guest-name"
+               placeholder="e.g. Peter Diamandis"
+               autocomplete="off" />
+        <span class="guest-intel-link" onclick="loadGuestIntelSetup()">
+          ✦ Load Guest Intel before recording →
+        </span>
       </div>
-      <div class="form-group">
-        <label class="form-label">Topics You Cover (comma separated)</label>
-        <input class="form-input" id="host-topics" placeholder="AI, singularity, Africa tech, entrepreneurship, metaverse" />
+
+      <div class="setup-field">
+        <label class="setup-label" for="host-topics">Topic / Keywords</label>
+        <input class="setup-input" id="host-topics"
+               placeholder="e.g. AI, exponential technology, singularity"
+               autocomplete="off" />
       </div>
-      <div class="form-group">
-        <label class="form-label">Today's Guest (optional)</label>
-        <input class="form-input" id="guest-name" placeholder="Guest name and brief bio" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Episode Topic / Notes</label>
-        <textarea class="form-input" id="episode-notes" placeholder="What are you discussing today? Any specific angles or questions you want to explore?"></textarea>
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="startSession()">Start Session →</button>
+
+      <button class="btn-start" onclick="startRecordingSession()">
+        Start Recording →
+      </button>
     </div>
   </div>
 
-  <!-- Header -->
-  <header>
-    <div class="logo">Pod<span>Pal</span></div>
-    <div class="status-dot" id="status-dot"></div>
-    <div class="status-label" id="status-label">Ready</div>
-    <div class="topic-badge" id="topic-badge">No topic detected yet</div>
-    <div class="header-right">
-      <button class="btn btn-outline" onclick="showSetup()">⚙ Setup</button>
-      <button class="btn btn-primary" id="mic-btn" onclick="toggleMic()">🎙 Start Listening</button>
-    </div>
-  </header>
+  <!-- ── RECORDING SCREEN ───────────────────────────────────────── -->
+  <div id="recording-screen" class="hidden">
 
-  <!-- Main layout -->
-  <main>
-    <!-- Talking points (left) -->
-    <div class="panel" id="questions-panel">
-      <div class="panel-header">
-        <span class="panel-title">💡 Talking Points</span>
-        <span class="panel-badge" id="q-count">0</span>
-      </div>
-      <div class="panel-body" id="questions-body">
-        <div class="empty-state">Start talking — PodPal will suggest follow-up questions as you go.</div>
+    <!-- Top Bar -->
+    <div id="top-bar">
+      <div class="topbar-logo">Pod<span>Pal</span></div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-show"  id="topbar-show-name">My Podcast</div>
+      <div class="topbar-guest" id="topbar-guest-name"></div>
+      <div id="topbar-topic" class="hidden"></div>
+      <div id="timer-display">00:00</div>
+      <div id="rec-indicator">
+        <div class="rec-dot" id="rec-dot"></div>
+        <span class="rec-label" id="rec-label">IDLE</span>
       </div>
     </div>
 
-    <!-- Research (right) -->
-    <div class="panel" id="research-panel">
-      <div class="panel-header">
-        <span class="panel-title">🔬 Live Research</span>
-        <span class="panel-badge" id="research-source">—</span>
-      </div>
-      <div class="panel-body" id="research-body">
-        <div class="empty-state">Research will appear here when a topic is detected.</div>
-      </div>
+    <!-- Fact-Check Banner (hidden by default) -->
+    <div id="factcheck-banner" class="hidden">
+      <span>⚠️</span>
+      <span id="factcheck-text">Claim to verify</span>
+      <button class="fc-dismiss" onclick="dismissFactCheck()">✕</button>
     </div>
 
-    <!-- Transcript strip (bottom) -->
-    <div class="panel" id="transcript-panel">
-      <div id="transcript-text">Transcript will appear here as you speak...</div>
-    </div>
-  </main>
+    <!-- Main Area -->
+    <div id="main-area">
 
+      <!-- Left Sidebar: Suggested Questions -->
+      <div id="questions-panel">
+        <div class="sidebar-header">
+          <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse">◀</button>
+          <span class="sidebar-title">Suggested Questions</span>
+          <span id="q-count">0</span>
+        </div>
+        <div id="questions-body">
+          <div class="empty-state">Questions will appear as you speak</div>
+        </div>
+      </div>
+
+      <!-- Center: Research Cards -->
+      <div id="cards-area">
+        <div id="research-body">
+          <div class="empty-state">
+            Research cards slide in as topics are detected.<br/>
+            <span style="font-size:12px;opacity:0.55;">Start speaking to activate PodPal.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest Intel Drawer (right) -->
+      <div id="guest-intel-drawer">
+        <div class="drawer-header">
+          <span class="drawer-title">Guest Intel</span>
+          <button class="drawer-close-btn" onclick="closeGuestIntel()">✕</button>
+        </div>
+        <div class="drawer-body">
+          <div class="guest-avatar">🎙️</div>
+          <div class="guest-name-title" id="intel-guest-name">Guest</div>
+          <div class="guest-bio-text"  id="intel-guest-bio">
+            Background and bio will populate as PodPal researches your guest.
+          </div>
+          <div class="drawer-section-title" style="margin-top:16px;">Tailored Questions</div>
+          <ul class="intel-questions-list" id="intel-questions">
+            <li class="intel-q-item" style="color:var(--muted);">Start recording to generate questions →</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Guest Intel edge tab -->
+      <div id="guest-intel-tab" onclick="openGuestIntel()">Guest Intel</div>
+
+    </div><!-- /#main-area -->
+
+    <!-- Transcript Strip -->
+    <div id="transcript-panel">
+      <div id="transcript-text">Speak to begin — live transcript appears here…</div>
+    </div>
+
+    <!-- Floating Action Bar -->
+    <div id="float-actions">
+      <button class="float-btn float-btn-export" onclick="exportNotes()">📋 Export Notes</button>
+      <button class="float-btn" id="mic-btn" onclick="toggleMic()">⏹ Stop Recording</button>
+    </div>
+
+  </div><!-- /#recording-screen -->
+
+  <!-- ── SESSION COMPLETE ───────────────────────────────────────── -->
+  <div id="session-complete" class="hidden">
+    <div class="complete-card">
+      <div class="complete-icon">✅</div>
+      <div class="complete-title">Session Complete</div>
+      <div class="complete-subtitle" id="complete-subtitle">Here's your episode summary.</div>
+
+      <div class="complete-stats">
+        <div class="stat-box">
+          <div class="stat-value" id="stat-duration">00:00</div>
+          <div class="stat-label">Duration</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-cards">0</div>
+          <div class="stat-label">Research Cards</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="stat-questions">0</div>
+          <div class="stat-label">Questions Used</div>
+        </div>
+      </div>
+
+      <button class="btn-export-md" onclick="exportNotes()">📥 Export Show Notes</button>
+      <br/>
+      <button class="btn-new-session" onclick="newSession()">Start New Session →</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
   <div id="toast"></div>
 
   <script>
+    // ── State ─────────────────────────────────────────────────────
     const BACKEND_URL = window.location.origin.replace(/^http/, 'ws');
-    let ws = null;
-    let sessionId = null;
+    let ws            = null;
+    let sessionId     = null;
     let mediaRecorder = null;
     let deepgramSocket = null;
-    let isListening = false;
+    let isListening   = false;
     let transcriptWords = [];
 
+    let recordingSeconds  = 0;
+    let timerInterval     = null;
+    let researchCardCount = 0;
+    let questionsUsed     = 0;
+    let sidebarCollapsed  = false;
+    let bookmarkedCards   = [];
+    let allResearch       = [];
+
     const DEEPGRAM_API_KEY = "";
-
-    // ── Transcription engine selector ──────────────────────────────────
-    // Uses Deepgram if key is set, otherwise falls back to Web Speech API
     const USE_DEEPGRAM = DEEPGRAM_API_KEY && DEEPGRAM_API_KEY !== "";
-    let recognition = null; // Web Speech API instance
+    let recognition = null;
 
-    function showSetup() {
-      document.getElementById('setup-modal').classList.remove('hidden');
+    // ── Setup helpers ─────────────────────────────────────────────
+    function loadGuestIntelSetup() {
+      const guest = document.getElementById('guest-name').value.trim();
+      if (!guest) { toast('Enter a guest name first'); return; }
+      toast(`✦ Guest intel for ${guest} will load after recording starts`);
     }
 
+    async function startRecordingSession() {
+      const show  = document.getElementById('show-name').value.trim()  || 'My Podcast';
+      const guest = document.getElementById('guest-name').value.trim() || '';
+
+      // Populate top bar
+      document.getElementById('topbar-show-name').textContent  = show;
+      document.getElementById('topbar-guest-name').textContent = guest;
+
+      // Populate guest intel panel
+      if (guest) {
+        document.getElementById('intel-guest-name').textContent = guest;
+        document.getElementById('intel-guest-bio').textContent  =
+          `${guest} — bio and key works will appear as PodPal gathers research.`;
+      }
+
+      // Switch screens
+      document.getElementById('setup-screen').classList.add('hidden');
+      document.getElementById('recording-screen').classList.remove('hidden');
+
+      // Create backend session then auto-start mic
+      await startSession();
+      startListening();
+    }
+
+    // ── Backend session (original logic preserved) ────────────────
     async function startSession() {
-      const name = document.getElementById('host-name').value || 'Host';
-      const show = document.getElementById('show-name').value || 'My Podcast';
-      const topicsRaw = document.getElementById('host-topics').value;
-      const topics = topicsRaw.split(',').map(t => t.trim()).filter(Boolean);
-      const guest = document.getElementById('guest-name').value;
-      const notes = document.getElementById('episode-notes').value;
+      const name      = document.getElementById('host-name').value    || 'Host';
+      const show      = document.getElementById('show-name').value    || 'My Podcast';
+      const topicsRaw = document.getElementById('host-topics').value  || '';
+      const topics    = topicsRaw.split(',').map(t => t.trim()).filter(Boolean);
+      const guest     = document.getElementById('guest-name').value;
+      const notes     = document.getElementById('episode-notes').value;
 
       const resp = await fetch('/session/create', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          host_profile: { name, show, topics, guest, notes }
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host_profile: { name, show, topics, guest, notes } })
       });
       const data = await resp.json();
       sessionId = data.session_id;
 
-      // Connect WebSocket
       ws = new WebSocket(`${BACKEND_URL}/ws/${sessionId}`);
-      ws.onopen = () => {
-        setStatus('connected', 'Connected');
-        toast('Session started. Click "Start Listening" to begin.');
-      };
+      ws.onopen    = () => toast('Connected to PodPal');
       ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
-      ws.onclose = () => setStatus('off', 'Disconnected');
-
-      document.getElementById('setup-modal').classList.add('hidden');
+      ws.onclose   = () => {};
     }
 
+    function showSetup() {
+      document.getElementById('recording-screen').classList.add('hidden');
+      document.getElementById('session-complete').classList.add('hidden');
+      document.getElementById('setup-screen').classList.remove('hidden');
+    }
+
+    // ── Message routing (original logic preserved) ────────────────
     function handleMessage(msg) {
-      switch(msg.type) {
-        case 'transcript_update':
-          updateTranscript(msg.text);
-          break;
-        case 'topic_update':
-          updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks);
-          break;
-        case 'research_update':
-          updateResearch(msg.research, msg.source, msg.topic);
-          break;
-        case 'fact_check':
-          addFactCheck(msg.claim, msg.result, msg.source);
-          break;
+      switch (msg.type) {
+        case 'transcript_update': updateTranscript(msg.text);                                          break;
+        case 'topic_update':      updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
+        case 'research_update':   updateResearch(msg.research, msg.source, msg.topic);                 break;
+        case 'fact_check':        addFactCheck(msg.claim, msg.result, msg.source);                     break;
       }
     }
 
@@ -410,118 +1185,136 @@
       const el = document.getElementById('transcript-text');
       if (!text) return;
       transcriptWords.push(text);
-      // Keep last 200 words
       if (transcriptWords.length > 200) transcriptWords = transcriptWords.slice(-200);
-      const last20 = transcriptWords.slice(-20).join(' ');
-      const rest = transcriptWords.slice(0, -20).join(' ');
-      el.innerHTML = `<span style="opacity:0.4">${rest}</span> <span class="word-new">${last20}</span>`;
-      el.scrollTop = el.scrollHeight;
+      // Show last ~20 words only
+      const lastWords = transcriptWords.slice(-20).join(' ');
+      el.innerHTML = `<span class="word-new">${lastWords}</span>`;
     }
 
     function updateTopic(topic, changed, questions, factChecks) {
+      // Legacy hidden elements
       document.getElementById('topic-badge').textContent = topic || 'Detecting...';
+
+      // Top-bar topic pill
+      const topicEl = document.getElementById('topbar-topic');
+      if (topic) {
+        topicEl.textContent = topic;
+        topicEl.classList.remove('hidden');
+      }
 
       if (changed || questions?.length) {
         const body = document.getElementById('questions-body');
-        const qs = questions || [];
+        const qs   = questions || [];
         document.getElementById('q-count').textContent = qs.length;
 
         if (qs.length) {
           body.classList.add('new-topic-flash');
           setTimeout(() => body.classList.remove('new-topic-flash'), 1000);
-          body.innerHTML = qs.map(q =>
-            `<div class="question-item">${q}</div>`
+          body.innerHTML = qs.map((q, i) => `
+            <div class="question-item">
+              <span class="question-num">${i + 1}</span>
+              <span class="question-text">${q}</span>
+              <button class="question-star" onclick="starQuestion(this,event)" title="Star">☆</button>
+            </div>`
           ).join('');
         }
 
-        // Show research loading
         if (changed) {
           document.getElementById('research-body').innerHTML =
-            `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"...</div>`;
+            `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"…</div>`;
         }
       }
     }
 
     function updateResearch(research, source, topic) {
+      // Legacy hidden element
       document.getElementById('research-source').textContent = source || '—';
-      document.getElementById('research-body').innerHTML =
-        `<div class="research-source">${source} · ${topic}</div>
-         <div class="research-text">${research}</div>`;
+
+      researchCardCount++;
+      allResearch.push({ research, source, topic });
+
+      const body = document.getElementById('research-body');
+
+      // Clear loading / empty states
+      body.querySelector('.research-loading')?.remove();
+      body.querySelector('.empty-state')?.remove();
+
+      const cardId = `card-${Date.now()}`;
+      const card   = document.createElement('div');
+      card.className = 'research-card';
+      card.id        = cardId;
+      card.innerHTML = `
+        <div class="card-topic-tag">${topic || 'Research'}</div>
+        <div class="card-headline">${source || 'Live Research'}</div>
+        <div class="card-facts">${research}</div>
+        <div class="card-footer">
+          <span>${source || ''}</span>
+          <button class="card-bookmark-btn" onclick="bookmarkCard('${cardId}',event)" title="Bookmark">🔖</button>
+        </div>`;
+
+      // Newest on top
+      body.insertBefore(card, body.firstChild);
     }
 
     function addFactCheck(claim, result, source) {
-      const body = document.getElementById('questions-body');
-      const div = document.createElement('div');
-      div.className = 'fact-item';
-      div.innerHTML = `<div class="fact-claim">⚠ Fact Check: "${claim}"</div><div class="fact-result">${result}</div>`;
-      body.insertBefore(div, body.firstChild);
+      // Amber banner at top — non-intrusive
+      const banner = document.getElementById('factcheck-banner');
+      document.getElementById('factcheck-text').textContent =
+        `Claim to verify: "${claim}" — ${result}`;
+      banner.classList.remove('hidden');
     }
 
+    function dismissFactCheck() {
+      document.getElementById('factcheck-banner').classList.add('hidden');
+    }
+
+    // ── Mic / Recording ───────────────────────────────────────────
     async function toggleMic() {
-      if (!sessionId) {
-        toast('Please complete setup first.');
-        showSetup();
-        return;
-      }
-      if (isListening) {
-        stopListening();
-      } else {
-        startListening();
-      }
+      if (!sessionId) { showSetup(); return; }
+      isListening ? stopRecordingAndComplete() : startListening();
     }
 
     async function startListening() {
-      if (USE_DEEPGRAM) {
-        startDeepgram();
-      } else {
-        startWebSpeech();
-      }
+      USE_DEEPGRAM ? startDeepgram() : startWebSpeech();
     }
 
-    // ── Web Speech API ─────────────────────────────────────────────────
+    // ── Web Speech API (original logic preserved) ─────────────────
     function startWebSpeech() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        toast('⚠ Web Speech API not supported. Use Chrome or Edge.');
+        toast('⚠ Web Speech not supported — use Chrome or Edge.');
         return;
       }
 
       recognition = new SpeechRecognition();
-      recognition.continuous = true;
+      recognition.continuous     = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang           = 'en-US';
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         isListening = true;
-        setStatus('live', 'Live · Web Speech');
-        document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
-        document.getElementById('mic-btn').classList.remove('btn-primary');
-        document.getElementById('mic-btn').classList.add('btn-danger');
-        toast('Listening via Web Speech API - speak naturally');
+        setRecording(true);
+        startTimer();
+        toast('🎙️ Recording — speak naturally');
       };
 
       recognition.onresult = (event) => {
-        let finalText = '';
+        let finalText  = '';
         let interimText = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalText += result[0].transcript + ' ';
-          } else {
-            interimText += result[0].transcript;
-          }
+          const r = event.results[i];
+          if (r.isFinal) finalText  += r[0].transcript + ' ';
+          else           interimText += r[0].transcript;
         }
 
-        // Show interim in transcript strip immediately
         if (interimText) {
-          const el = document.getElementById('transcript-text');
-          const last = transcriptWords.slice(-30).join(' ');
-          el.innerHTML = `<span style="opacity:0.4">${transcriptWords.slice(0,-30).join(' ')}</span> <span class="word-new">${last}</span> <span style="opacity:0.35;font-style:italic">${interimText}</span>`;
+          const el       = document.getElementById('transcript-text');
+          const lastWords = transcriptWords.slice(-15).join(' ');
+          el.innerHTML   = `<span class="word-new">${lastWords}</span> <span style="opacity:0.32;font-style:italic">${interimText}</span>`;
         }
 
-        // Send final transcript to backend for intelligence
         if (finalText.trim() && ws?.readyState === WebSocket.OPEN) {
           const words = finalText.trim().split(' ').map(w => ({ word: w }));
           ws.send(JSON.stringify({ type: 'transcript', text: finalText.trim(), words }));
@@ -529,24 +1322,16 @@
       };
 
       recognition.onerror = (e) => {
-        if (e.error === 'not-allowed') {
-          toast('Microphone access denied. Please allow mic access and try again.');
-        } else if (e.error !== 'no-speech') {
-          toast('Speech recognition error: ' + e.error);
-        }
+        if      (e.error === 'not-allowed') toast('Microphone access denied.');
+        else if (e.error !== 'no-speech')   toast('Speech error: ' + e.error);
       };
 
-      recognition.onend = () => {
-        // Auto-restart if still supposed to be listening
-        if (isListening) {
-          recognition.start();
-        }
-      };
+      recognition.onend = () => { if (isListening) recognition.start(); };
 
       recognition.start();
     }
 
-    // ── Deepgram streaming ─────────────────────────────────────────────
+    // ── Deepgram (original logic preserved) ──────────────────────
     async function startDeepgram() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -564,60 +1349,16 @@
           };
           mediaRecorder.start(250);
           isListening = true;
-          setStatus('live', 'Live · Deepgram');
-          document.getElementById('mic-btn').textContent = '⏹ Stop Listening';
-          document.getElementById('mic-btn').classList.remove('btn-primary');
-          document.getElementById('mic-btn').classList.add('btn-danger');
-          toast('Listening via Deepgram Nova-2');
+          setRecording(true);
+          startTimer();
+          toast('🎙️ Recording via Deepgram Nova-2');
         };
 
         deepgramSocket.onmessage = (e) => {
           const data = JSON.parse(e.data);
-          const alt = data?.channel?.alternatives?.[0];
+          const alt  = data?.channel?.alternatives?.[0];
           if (!alt) return;
-          const words = alt.words || [];
           const transcript = alt.transcript || '';
+          const words      = alt.words || [];
           if (transcript && data.is_final && ws?.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'transcript', text: transcript, words }));
-          }
-        };
-
-        deepgramSocket.onerror = () => toast('Deepgram connection error');
-
-      } catch (err) {
-        toast('Microphone access denied: ' + err.message);
-      }
-    }
-
-    function stopListening() {
-      // Stop Web Speech
-      if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
-      // Stop Deepgram
-      if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
-      if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
-
-      isListening = false;
-      setStatus('connected', 'Connected');
-      document.getElementById('mic-btn').textContent = '🎙 Start Listening';
-      document.getElementById('mic-btn').classList.add('btn-primary');
-      document.getElementById('mic-btn').classList.remove('btn-danger');
-    }
-
-    function setStatus(state, label) {
-      const dot = document.getElementById('status-dot');
-      dot.className = 'status-dot' + (state === 'live' ? ' live' : '');
-      document.getElementById('status-label').textContent = label;
-    }
-
-    function toast(msg) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 3500);
-    }
-
-    // Auto-show setup on load
-    window.onload = () => showSetup();
-  </script>
-</body>
-</html>
+            ws.send(JSON.stringify({ type: 'transcript', text: transcript, words }
