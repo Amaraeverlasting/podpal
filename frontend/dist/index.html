@@ -266,6 +266,80 @@
     .empty-state { color: var(--muted2); font-size: 12px; text-align: center; padding: 28px 12px; line-height: 1.6; }
     .flash { animation: flash 0.8s ease; }
     @keyframes flash { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+
+    /* ── Session Summary Modal ── */
+    #summary-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    #summary-modal.hidden { display: none; }
+    .summary-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 580px;
+      max-width: 95vw;
+      max-height: 88vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .summary-box::-webkit-scrollbar { width: 3px; }
+    .summary-box::-webkit-scrollbar-thumb { background: var(--surface2); }
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .summary-title { font-size: 18px; font-weight: 700; }
+    .summary-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .summary-bullets { display: flex; flex-direction: column; gap: 8px; }
+    .summary-bullet {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 13px; line-height: 1.55; color: var(--text);
+    }
+    .bullet-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent2); flex-shrink: 0; margin-top: 7px;
+    }
+    .summary-posts { display: flex; flex-direction: column; gap: 10px; }
+    .post-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .post-text { font-size: 12px; line-height: 1.6; color: var(--text); flex: 1; }
+    .post-copy {
+      padding: 4px 10px; border-radius: 5px;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--muted);
+      font-size: 10px; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .post-copy:hover { color: var(--text); border-color: var(--accent); }
+    .show-notes-text {
+      font-size: 13px; line-height: 1.7;
+      color: rgba(232,232,240,0.85);
+      background: var(--surface2);
+      border-radius: 8px; padding: 14px 16px;
+    }
+    .summary-footer { display: flex; gap: 10px; justify-content: flex-end; }
+    .summary-generating {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted); font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -346,6 +420,35 @@
 
   <div id="toast"></div>
 
+  <!-- Session Summary Modal -->
+  <div id="summary-modal" class="hidden">
+    <div class="summary-box">
+      <div class="summary-header">
+        <div class="summary-title">📋 Session Summary</div>
+        <button class="btn btn-outline" onclick="closeSummaryModal()">✕ Close</button>
+      </div>
+      <div id="summary-generating" class="summary-generating hidden">
+        <div class="spinner"></div> Generating summary...
+      </div>
+      <div id="summary-bullets-section">
+        <div class="summary-section-label">Episode Highlights</div>
+        <div class="summary-bullets" id="summary-bullets"></div>
+      </div>
+      <div id="summary-posts-section">
+        <div class="summary-section-label">Social Post Ideas</div>
+        <div class="summary-posts" id="summary-posts"></div>
+      </div>
+      <div id="summary-notes-section">
+        <div class="summary-section-label">Show Notes Draft</div>
+        <div class="show-notes-text" id="summary-show-notes"></div>
+      </div>
+      <div class="summary-footer">
+        <button class="btn btn-outline" onclick="copySummaryAll()">📋 Copy All</button>
+        <button class="btn btn-primary" onclick="closeSummaryModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const BACKEND_URL = window.location.origin.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
     let ws = null;
@@ -396,8 +499,9 @@
       switch(msg.type) {
         case 'transcript_update': updateTranscript(msg.text); break;
         case 'topic_update':      updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
-        case 'research_update':   updateResearch(msg.research, msg.source, msg.topic); break;
+        case 'research_update':   updateResearch(msg.research, msg.source, msg.topic, msg.source_url); break;
         case 'fact_check':        addFactCheck(msg.claim, msg.result, msg.source); break;
+        case 'session_summary':   showSummaryModal(msg); break;
       }
     }
 
@@ -438,16 +542,18 @@
       }
     }
 
-    function updateResearch(research, source, topic) {
+    function updateResearch(research, source, topic, sourceUrl) {
       document.getElementById('research-src').textContent = source || '';
-      // Split research into paragraphs for readability
       const paragraphs = research.split(/\n+/).filter(p => p.trim()).map(p =>
         `<p>${p.trim()}</p>`
       ).join('');
+      const sourceTag = sourceUrl
+        ? `Source: ${source} — <a href="${sourceUrl}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;">${sourceUrl.replace(/^https?:\/\//, '').split('/')[0]}</a>`
+        : `Source: ${source || 'AI Knowledge'}`;
       document.getElementById('research-body').innerHTML =
         `<div class="research-topic">${topic}</div>
          <div class="research-body">${paragraphs || `<p>${research}</p>`}</div>
-         <div class="research-source-tag">Source: ${source}</div>`;
+         <div class="research-source-tag">${sourceTag}</div>`;
     }
 
     function addFactCheck(claim, result, source) {
@@ -539,6 +645,12 @@
     }
 
     function stopListening() {
+      // Request post-session summary before tearing down
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'stop_session' }));
+        showSummaryLoading();
+        toast('Session stopped — generating summary...');
+      }
       if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
       if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder = null; }
       if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
@@ -546,6 +658,69 @@
       setStatus('connected', 'Connected');
       document.getElementById('mic-btn').textContent = '🎙 Start Listening';
       document.getElementById('mic-btn').className = 'btn btn-primary';
+    }
+
+    function showSummaryLoading() {
+      document.getElementById('summary-modal').classList.remove('hidden');
+      document.getElementById('summary-generating').classList.remove('hidden');
+      document.getElementById('summary-bullets-section').style.display = 'none';
+      document.getElementById('summary-posts-section').style.display = 'none';
+      document.getElementById('summary-notes-section').style.display = 'none';
+      document.querySelector('.summary-footer').style.display = 'none';
+    }
+
+    function showSummaryModal(data) {
+      const bullets = data.bullets || [];
+      const posts = data.posts || [];
+      const showNotes = data.show_notes || '';
+      window._summaryData = data;
+
+      document.getElementById('summary-bullets').innerHTML = bullets.map(b =>
+        `<div class="summary-bullet"><span class="bullet-dot"></span><span>${b}</span></div>`
+      ).join('');
+
+      document.getElementById('summary-posts').innerHTML = posts.map((p, i) =>
+        `<div class="post-item">
+          <span class="post-text">${p}</span>
+          <button class="post-copy" onclick="copyPost(${i})">Copy</button>
+        </div>`
+      ).join('');
+
+      document.getElementById('summary-show-notes').textContent = showNotes;
+
+      // Show content, hide loading
+      document.getElementById('summary-generating').classList.add('hidden');
+      document.getElementById('summary-bullets-section').style.display = '';
+      document.getElementById('summary-posts-section').style.display = '';
+      document.getElementById('summary-notes-section').style.display = '';
+      document.querySelector('.summary-footer').style.display = '';
+      document.getElementById('summary-modal').classList.remove('hidden');
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summary-modal').classList.add('hidden');
+    }
+
+    function copyPost(idx) {
+      const posts = window._summaryData?.posts || [];
+      if (posts[idx]) {
+        navigator.clipboard.writeText(posts[idx]).then(() => toast('Post copied!'));
+      }
+    }
+
+    function copySummaryAll() {
+      const d = window._summaryData || {};
+      const text = [
+        '== Episode Highlights ==',
+        (d.bullets || []).map((b, i) => `${i + 1}. ${b}`).join('\n'),
+        '',
+        '== Social Post Ideas ==',
+        (d.posts || []).map((p, i) => `${i + 1}. ${p}`).join('\n'),
+        '',
+        '== Show Notes ==',
+        d.show_notes || '',
+      ].join('\n');
+      navigator.clipboard.writeText(text).then(() => toast('All copied to clipboard!'));
     }
 
     function setStatus(state, label) {

@@ -50,6 +50,18 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 
+
+def _is_valid_key(key: str) -> bool:
+    """Return False if key is empty, a SecretRef dict string, or looks non-functional."""
+    if not key:
+        return False
+    s = key.strip()
+    # SecretRef strings look like "{'ref': 'KEY_NAME'}" or "SecretRef(...)"
+    if s.startswith('{') or 'SecretRef' in s or s.startswith('['):
+        return False
+    return True
+
+
 claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
 # Data directories
@@ -202,24 +214,35 @@ async def fetch_research(topic: str, entities: list[str], host_profile: dict) ->
         except Exception as e:
             print(f"Perplexity error: {e}")
 
-    if not results.get("research") and BRAVE_API_KEY:
+    if not results.get("research") and _is_valid_key(BRAVE_API_KEY):
         try:
             async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(
                     "https://api.search.brave.com/res/v1/web/search",
                     headers={"X-Subscription-Token": BRAVE_API_KEY},
-                    params={"q": query, "count": 5, "freshness": "pw"}
+                    params={"q": query, "count": 3, "search_lang": "en"}
                 )
                 data = resp.json()
-                snippets = [r.get("description", "") for r in data.get("web", {}).get("results", [])[:3]]
-                if snippets:
+                brave_hits = data.get("web", {}).get("results", [])[:3]
+                if brave_hits:
+                    top_url = brave_hits[0].get("url", "")
+                    result_snippets = "\n\n".join([
+                        f"Title: {r.get('title', '')}\nSummary: {r.get('description', '')}\nURL: {r.get('url', '')}"
+                        for r in brave_hits
+                    ])
                     synth = await claude.messages.create(
                         model="claude-haiku-4-5",
-                        max_tokens=250,
-                        messages=[{"role": "user", "content": f"Summarise these search results about '{query}' into 3 key bullet points with specific facts/stats:\n\n" + "\n".join(snippets)}]
+                        max_tokens=400,
+                        messages=[{"role": "user", "content": (
+                            f"You are a research assistant helping a live podcast host. "
+                            f"Synthesise these web search results about '{query}' into a clean 2-3 paragraph "
+                            f"summary with specific facts and insights the host can use right now. "
+                            f"Be concise and direct — no filler phrases.\n\n{result_snippets}"
+                        )}]
                     )
                     results["research"] = synth.content[0].text
                     results["source"] = "Web Search"
+                    results["source_url"] = top_url
         except Exception as e:
             print(f"Brave search error: {e}")
 
@@ -277,6 +300,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     session.last_research_at = now
                     asyncio.create_task(run_intelligence(session, recent_text))
 
+            elif event_type == "stop_session":
+                asyncio.create_task(generate_session_summary(session))
+
             elif event_type == "ping":
                 await websocket.send_json({"type": "pong"})
 
@@ -319,6 +345,7 @@ async def run_intelligence(session: PodSession, recent_text: str):
                 "topic": topic,
                 "research": research.get("research", ""),
                 "source": research.get("source", ""),
+                "source_url": research.get("source_url", ""),
                 "timestamp": time.time()
             }
             session.research_cards.append(card)
@@ -337,6 +364,64 @@ async def run_intelligence(session: PodSession, recent_text: str):
 
     except Exception as e:
         print(f"Intelligence error: {e}")
+
+
+async def generate_session_summary(session: PodSession):
+    """Generate a post-session summary: bullets, social posts, show notes."""
+    transcript_text = " ".join([w.get("word", "") for w in session.full_transcript])
+    if not transcript_text.strip():
+        await session.broadcast({
+            "type": "session_summary",
+            "bullets": ["No transcript was recorded."],
+            "posts": [],
+            "show_notes": "No content was recorded in this session."
+        })
+        return
+
+    guest = session.host_profile.get("guest", "the guest")
+    show = session.host_profile.get("show", "the podcast")
+
+    prompt = f"""You are a podcast production assistant for "{show}". Analyse this transcript and produce a post-session package.
+
+Transcript:
+{transcript_text[:5000]}
+
+Return JSON only — no markdown, no extra text:
+{{
+  "bullets": [
+    "5 specific bullet points summarising what was actually discussed (not generic — name topics, claims, and key moments)",
+    "bullet 2",
+    "bullet 3",
+    "bullet 4",
+    "bullet 5"
+  ],
+  "posts": [
+    "Social post 1 — under 280 chars, no em dashes, no buzzwords (leverage/synergy/transformative/groundbreaking etc), specific and punchy",
+    "Social post 2 — same rules, different angle",
+    "Social post 3 — same rules, a question or hook"
+  ],
+  "show_notes": "One concise paragraph of show notes. Specific topics, key insights, guest name if known. No filler. Write in third person."
+}}"""
+
+    try:
+        resp = await claude.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=900,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = resp.content[0].text.strip()
+        if "```" in raw:
+            raw = raw.split("```")[1].replace("json", "").strip()
+        summary_data = json.loads(raw)
+        await session.broadcast({"type": "session_summary", **summary_data})
+    except Exception as e:
+        print(f"Session summary error: {e}")
+        await session.broadcast({
+            "type": "session_summary",
+            "bullets": ["Summary generation failed — check logs."],
+            "posts": [],
+            "show_notes": "Could not generate show notes for this session."
+        })
 
 
 # ── Session endpoints ────────────────────────────────────────────────────────
