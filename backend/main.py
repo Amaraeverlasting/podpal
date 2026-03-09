@@ -22,14 +22,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from payfast_handler import router as payfast_router
-from email_handler import send_waitlist_confirmation
+try:
+    from payfast_handler import router as payfast_router
+    _payfast_ok = True
+except Exception as e:
+    print(f"[WARN] PayFast handler failed to load: {e}")
+    _payfast_ok = False
+
+try:
+    from email_handler import send_waitlist_confirmation
+    _email_ok = True
+except Exception as e:
+    print(f"[WARN] Email handler failed to load: {e}")
+    _email_ok = False
+    async def send_waitlist_confirmation(*a, **kw): pass
 
 load_dotenv()
 
 app = FastAPI(title="PodPal", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-app.include_router(payfast_router)
+if _payfast_ok:
+    app.include_router(payfast_router)
 
 # Config
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
