@@ -146,3 +146,4 @@ async def get_subscription(email: str):
     if email in subs:
         return subs[email]
     return {"status": "none", "tier": None}
+# PayFast integration active
