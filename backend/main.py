@@ -303,6 +303,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             elif event_type == "stop_session":
                 asyncio.create_task(generate_session_summary(session))
 
+            elif event_type == "suggest_question":
+                context = data.get("context", "")
+                asyncio.create_task(generate_question_suggestion(session, context))
+
             elif event_type == "ping":
                 await websocket.send_json({"type": "pong"})
 
@@ -421,6 +425,54 @@ Return JSON only — no markdown, no extra text:
             "bullets": ["Summary generation failed — check logs."],
             "posts": [],
             "show_notes": "Could not generate show notes for this session."
+        })
+
+
+async def generate_question_suggestion(session: PodSession, context: str):
+    """Use Claude Haiku to generate a single sharp follow-up question from recent transcript."""
+    words = context.split()[-100:] if context.strip() else []
+    recent = " ".join(words).strip()
+
+    if not recent:
+        await session.broadcast({
+            "type": "question_suggestion",
+            "question": "What's the one thing you'd want our audience to remember from this conversation?"
+        })
+        return
+
+    host_name = session.host_profile.get("name", "the host")
+    guest_name = session.host_profile.get("guest", "the guest")
+
+    prompt = f"""You are a live podcast co-pilot helping {host_name} interview {guest_name}.
+
+Based on the last thing said, generate ONE sharp, specific follow-up question the host should ask RIGHT NOW. 
+
+Recent transcript:
+"{recent}"
+
+Rules:
+- Output ONLY the question — no labels, no explanation, no quotes
+- Under 20 words
+- Specific and curious, not generic ("tell me more about X" is lazy)
+- Conversational — the kind of question that catches a guest off-guard in a good way
+- No filler phrases"""
+
+    try:
+        resp = await claude.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=80,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        question = resp.content[0].text.strip().strip('"').strip("'")
+        # Track it
+        if question and question not in session.suggested_questions:
+            session.suggested_questions.append(question)
+        await session.broadcast({"type": "question_suggestion", "question": question})
+    except Exception as e:
+        print(f"Question suggestion error: {e}")
+        await session.broadcast({
+            "type": "question_suggestion",
+            "question": "What surprised you most about that?"
         })
 
 

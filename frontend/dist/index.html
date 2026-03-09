@@ -372,6 +372,59 @@
       display: flex; align-items: center; gap: 10px;
       color: var(--muted); font-size: 13px;
     }
+
+    /* ── Transcript Clips (B1) ── */
+    #clips-list {
+      padding: 0 18px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .clip-item {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 4px 8px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      border: 1px solid var(--border);
+    }
+    .clip-ts { color: var(--accent2); font-variant-numeric: tabular-nums; flex-shrink: 0; font-weight: 600; font-size: 10px; }
+    .clip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font-size: 11px; }
+
+    /* ── AI Question Suggestion (B3) ── */
+    #ai-question-card {
+      background: rgba(78,205,196,0.07);
+      border: 1px solid var(--accent2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+    .ai-question-label {
+      font-size: 10px;
+      color: var(--accent2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+    .ai-question-text {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .ai-question-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 7px;
+    }
+    .ai-question-timer { font-size: 10px; color: var(--muted2); }
+    .ai-question-dismiss { font-size: 10px; color: var(--muted2); cursor: pointer; }
+    .ai-question-dismiss:hover { color: var(--red); }
   </style>
 </head>
 <body>
@@ -431,9 +484,20 @@
     <div class="panel" id="questions-panel">
       <div class="panel-header">
         <span class="panel-title">Talking Points</span>
-        <span class="panel-count" id="q-count"></span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn btn-outline" id="suggest-btn" onclick="suggestQuestion()" style="font-size:10px;padding:4px 10px;" title="AI-suggest a follow-up question">💬 Suggest</button>
+          <span class="panel-count" id="q-count"></span>
+        </div>
       </div>
       <div class="panel-body" id="questions-body">
+        <div id="ai-question-card">
+          <div class="ai-question-label">AI suggested →</div>
+          <div class="ai-question-text" id="ai-question-text"></div>
+          <div class="ai-question-footer">
+            <span class="ai-question-timer" id="ai-question-timer">auto-dismisses in 30s</span>
+            <span class="ai-question-dismiss" onclick="dismissAIQuestion()">✕ dismiss</span>
+          </div>
+        </div>
         <div id="guest-intel-card" style="display:none;">
           <div class="intel-header" onclick="toggleGuestIntel()">
             <span class="intel-name" id="guest-intel-name">👤 Guest</span>
@@ -460,8 +524,10 @@
     <div class="panel" id="transcript-panel">
       <div class="panel-header">
         <span class="panel-title">Transcript</span>
+        <button class="btn btn-outline" onclick="clipTranscript()" id="clip-btn" style="font-size:10px;padding:4px 10px;" title="Save last ~30 seconds as a clip">📌 Clip</button>
       </div>
       <div id="transcript-text">Your words will appear here as you speak...</div>
+      <div id="clips-list"></div>
     </div>
   </main>
 
@@ -490,6 +556,7 @@
         <div class="show-notes-text" id="summary-show-notes"></div>
       </div>
       <div class="summary-footer">
+        <button class="btn btn-outline" onclick="exportShowNotes()">📥 Export</button>
         <button class="btn btn-outline" onclick="copySummaryAll()">📋 Copy All</button>
         <button class="btn btn-primary" onclick="closeSummaryModal()">Close</button>
       </div>
@@ -555,11 +622,12 @@
 
     function handleMessage(msg) {
       switch(msg.type) {
-        case 'transcript_update': updateTranscript(msg.text); break;
-        case 'topic_update':      updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
-        case 'research_update':   updateResearch(msg.research, msg.source, msg.topic, msg.source_url); break;
-        case 'fact_check':        addFactCheck(msg.claim, msg.result, msg.source); break;
-        case 'session_summary':   showSummaryModal(msg); break;
+        case 'transcript_update':  updateTranscript(msg.text); break;
+        case 'topic_update':       updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
+        case 'research_update':    updateResearch(msg.research, msg.source, msg.topic, msg.source_url); break;
+        case 'fact_check':         addFactCheck(msg.claim, msg.result, msg.source); break;
+        case 'session_summary':    showSummaryModal(msg); break;
+        case 'question_suggestion': showAIQuestion(msg.question); break;
       }
     }
 
@@ -968,6 +1036,138 @@
       } finally {
         document.getElementById('guest-loading').style.display = 'none';
       }
+    }
+
+    // ── B1: Transcript Clips ──────────────────────────────────────
+    let clips = [];
+
+    function clipTranscript() {
+      if (!transcriptWords.length) { toast('No transcript to clip yet'); return; }
+      // Last ~50 words ≈ 30 seconds of normal speech
+      const clipWords = transcriptWords.slice(-50);
+      const clipText = clipWords.join(' ').trim();
+      if (!clipText) { toast('Nothing to clip'); return; }
+
+      const elapsed = sessionTimerSeconds || 0;
+      const h = Math.floor(elapsed / 3600);
+      const m = Math.floor((elapsed % 3600) / 60);
+      const s = elapsed % 60;
+      const ts = h > 0
+        ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+        : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+      clips.push({ ts, text: clipText });
+      renderClips();
+      toast(`📌 Clipped at ${ts}`);
+    }
+
+    function renderClips() {
+      const el = document.getElementById('clips-list');
+      if (!clips.length) { el.innerHTML = ''; return; }
+      el.innerHTML = clips.map(c =>
+        `<div class="clip-item">
+          <span class="clip-ts">[${c.ts}]</span>
+          <span class="clip-text">"${c.text.length > 90 ? c.text.substring(0,90) + '...' : c.text}"</span>
+        </div>`
+      ).join('');
+    }
+
+    // ── B2: Show Notes Export ─────────────────────────────────────
+    function exportShowNotes() {
+      const d = window._summaryData || {};
+      const today = new Date().toISOString().split('T')[0];
+      const guestName = document.getElementById('guest-name').value || 'Guest';
+      const showName  = document.getElementById('show-name').value  || 'My Podcast';
+      const hostName  = document.getElementById('host-name').value  || 'Host';
+
+      const clipsSection = clips.length
+        ? ['', '## Clipped Moments', '', ...clips.map(c => `- **[${c.ts}]** "${c.text}"`), '']
+        : [];
+
+      const lines = [
+        `# Show Notes — ${showName}`,
+        '',
+        `**Date:** ${today}  |  **Guest:** ${guestName}  |  **Host:** ${hostName}`,
+        '',
+        '---',
+        '',
+        '## Episode Highlights',
+        '',
+        ...(d.bullets || ['(no highlights)']).map(b => `- ${b}`),
+        '',
+        '## Show Notes',
+        '',
+        d.show_notes || '(no show notes generated)',
+        '',
+        '## Social Post Ideas',
+        '',
+        ...(d.posts || []).map((p, i) => [`**Post ${i+1}:**`, p, '']).flat(),
+        ...clipsSection,
+        '## Full Transcript',
+        '',
+        transcriptWords.join(' ') || '(no transcript recorded)',
+        '',
+        '---',
+        '*Generated by PodPal*',
+      ];
+
+      const md = lines.join('\n');
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `show-notes-${today}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast('📥 Show notes exported!');
+    }
+
+    // ── B3: Guest Question Suggester ──────────────────────────────
+    let aiQuestionTimer    = null;
+    let aiQuestionCountdown = null;
+
+    function suggestQuestion() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) { toast('Not connected to session'); return; }
+      const context = transcriptWords.slice(-100).join(' ');
+      if (!context.trim()) { toast('Need some transcript first'); return; }
+      ws.send(JSON.stringify({ type: 'suggest_question', context }));
+      const btn = document.getElementById('suggest-btn');
+      btn.textContent = '💬 ...';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = '💬 Suggest';
+        btn.disabled = false;
+      }, 8000);
+    }
+
+    function showAIQuestion(question) {
+      clearTimeout(aiQuestionTimer);
+      clearInterval(aiQuestionCountdown);
+      document.getElementById('ai-question-text').textContent = question;
+      document.getElementById('ai-question-card').style.display = 'block';
+      const btn = document.getElementById('suggest-btn');
+      btn.textContent = '💬 Suggest';
+      btn.disabled = false;
+      let secs = 30;
+      document.getElementById('ai-question-timer').textContent = `auto-dismisses in ${secs}s`;
+      aiQuestionCountdown = setInterval(() => {
+        secs--;
+        const timerEl = document.getElementById('ai-question-timer');
+        if (timerEl) timerEl.textContent = `auto-dismisses in ${secs}s`;
+        if (secs <= 0) clearInterval(aiQuestionCountdown);
+      }, 1000);
+      aiQuestionTimer = setTimeout(() => dismissAIQuestion(), 30000);
+      toast('💬 Question suggestion ready');
+    }
+
+    function dismissAIQuestion() {
+      clearTimeout(aiQuestionTimer);
+      clearInterval(aiQuestionCountdown);
+      aiQuestionTimer = null;
+      aiQuestionCountdown = null;
+      document.getElementById('ai-question-card').style.display = 'none';
     }
 
     window.onload = () => {
