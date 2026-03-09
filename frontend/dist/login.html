@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodPal — Sign In</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c6df0;
+      --accent2: #4ecdc4;
+      --text: #e8e8f0;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .logo {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .logo span { color: var(--accent2); }
+    .tagline {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input[type="email"] {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    input[type="email"]:focus {
+      border-color: var(--accent);
+    }
+    input[type="email"]::placeholder { color: var(--muted); }
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:hover { background: #6a5de0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .success {
+      display: none;
+      text-align: center;
+      padding: 24px 0 8px;
+    }
+    .success.show { display: block; }
+    .success-icon { font-size: 48px; margin-bottom: 16px; }
+    .success h2 { font-size: 20px; margin-bottom: 8px; }
+    .success p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .form-wrap { }
+    .form-wrap.hidden { display: none; }
+    .note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .error-msg {
+      display: none;
+      background: rgba(255,80,80,0.1);
+      border: 1px solid rgba(255,80,80,0.3);
+      border-radius: 8px;
+      color: #ff6060;
+      font-size: 13px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+    .error-msg.show { display: block; }
+    @media (max-width: 480px) {
+      .card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Pod<span>Pal</span></div>
+    <div class="tagline">Your live AI co-pilot for podcasting</div>
+
+    <div class="form-wrap" id="form-wrap">
+      <h1>Sign in</h1>
+      <p class="sub">Enter your email and we'll send you a login link. No password needed.</p>
+      <div class="error-msg" id="error-msg"></div>
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+      <button class="btn" id="send-btn" onclick="sendLink()">Send me a link →</button>
+      <p class="note">New users get a free account automatically.</p>
+    </div>
+
+    <div class="success" id="success">
+      <div class="success-icon">📬</div>
+      <h2>Check your email</h2>
+      <p>We sent a login link to <strong id="sent-email"></strong>.<br />Click it to sign in — it expires in 15 minutes.</p>
+      <p style="margin-top:16px;font-size:12px;color:var(--muted);">Didn't get it? Check your spam folder or <a href="/login" style="color:var(--accent);">try again</a>.</p>
+    </div>
+  </div>
+
+  <script>
+    // If already logged in, redirect to dashboard
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      if (d.authenticated) window.location.href = '/dashboard';
+    }).catch(() => {});
+
+    async function sendLink() {
+      const email = document.getElementById('email').value.trim();
+      const btn = document.getElementById('send-btn');
+      const errEl = document.getElementById('error-msg');
+      errEl.classList.remove('show');
+
+      if (!email || !email.includes('@')) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.classList.add('show');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/auth/request-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          document.getElementById('form-wrap').classList.add('hidden');
+          document.getElementById('sent-email').textContent = email;
+          document.getElementById('success').classList.add('show');
+        } else {
+          errEl.textContent = data.error || 'Something went wrong. Please try again.';
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btn.textContent = 'Send me a link →';
+        }
+      } catch (e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Send me a link →';
+      }
+    }
+
+    // Allow Enter key
+    document.getElementById('email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendLink();
+    });
+  </script>
+</body>
+</html>

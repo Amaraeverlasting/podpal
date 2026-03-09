@@ -124,6 +124,22 @@ async def payfast_itn(request: Request):
             "payment_id": form.get("m_payment_id", ""),
         }
         _save_subs(subs)
+
+        # Create/update user profile
+        try:
+            from auth_handler import update_user_tier, get_or_create_user
+            update_user_tier(email, tier)
+        except Exception as e:
+            print(f"[payfast] user update error: {e}")
+
+        # Track analytics
+        try:
+            from analytics import payment_completed
+            amount = PRICES.get(tier, {}).get("amount", "0")
+            payment_completed(email, tier, amount)
+        except Exception as e:
+            print(f"[payfast] analytics error: {e}")
+
         # Fire welcome email (import here to avoid circular)
         try:
             from email_handler import send_welcome_email

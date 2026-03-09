@@ -17,7 +17,7 @@ from typing import Optional
 import anthropic
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +30,21 @@ except Exception as e:
     _payfast_ok = False
 
 try:
+    from auth_handler import router as auth_router, get_current_user
+    _auth_ok = True
+except Exception as e:
+    print(f"[WARN] Auth handler failed to load: {e}")
+    _auth_ok = False
+    def get_current_user(request): return None
+
+try:
+    import analytics as _analytics
+    _analytics_ok = True
+except Exception as e:
+    print(f"[WARN] Analytics failed to load: {e}")
+    _analytics_ok = False
+
+try:
     from email_handler import send_waitlist_confirmation
     _email_ok = True
 except Exception as e:
@@ -39,10 +54,32 @@ except Exception as e:
 
 load_dotenv()
 
-app = FastAPI(title="PodPal", version="0.2.0")
+app = FastAPI(title="PodPal", version="0.3.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 if _payfast_ok:
     app.include_router(payfast_router)
+if _auth_ok:
+    app.include_router(auth_router)
+
+# ── Page-view middleware ──────────────────────────────────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class PageViewMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        # Track page views for HTML pages only (not API/WS/static)
+        path = request.url.path
+        if not path.startswith("/api/") and not path.startswith("/ws") and not "." in path.split("/")[-1]:
+            try:
+                if _analytics_ok:
+                    user = get_current_user(request)
+                    _analytics.page_view(path, user.get("email") if user else None)
+            except Exception:
+                pass
+        return response
+
+app.add_middleware(PageViewMiddleware)
+
 
 # Config
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
@@ -87,6 +124,7 @@ class PodSession:
         self.research_cooldown = 15
         self.clients: list[WebSocket] = []
         self.start_time = time.time()
+        self.user_email: Optional[str] = None
         # Tracked data for session history
         self.research_cards: list[dict] = []
         self.fact_check_results: list[dict] = []
@@ -129,6 +167,7 @@ class PodSession:
 
         data = {
             "session_id": self.session_id,
+            "user_email": self.user_email or "",
             "start_time": self.start_time,
             "end_time": time.time(),
             "duration_seconds": int(time.time() - self.start_time),
@@ -305,6 +344,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
             elif event_type == "suggest_question":
                 context = data.get("context", "")
+                if _analytics_ok:
+                    try:
+                        _analytics.feature_used(getattr(session, "user_email", None), "suggest_question")
+                    except Exception:
+                        pass
                 asyncio.create_task(generate_question_suggestion(session, context))
 
             elif event_type == "ping":
@@ -479,13 +523,34 @@ Rules:
 # ── Session endpoints ────────────────────────────────────────────────────────
 
 @app.post("/session/create")
-async def create_session(payload: dict):
+async def create_session(payload: dict, request: Request):
     session_id = f"session_{int(time.time())}"
     host_profile = payload.get("host_profile", {})
     sessions[session_id] = PodSession(session_id, host_profile)
+
+    # Associate with logged-in user
+    user = get_current_user(request)
+    user_email = None
+    if user:
+        user_email = user.get("email")
+        sessions[session_id].user_email = user_email
+        try:
+            from auth_handler import add_session_to_user
+            add_session_to_user(user_email, session_id)
+        except Exception:
+            pass
+
+    # Track analytics
+    if _analytics_ok:
+        try:
+            _analytics.session_started(user_email, session_id)
+        except Exception:
+            pass
+
     return {
         "session_id": session_id,
         "status": "created",
+        "user_email": user_email,
         "deepgram_key": DEEPGRAM_API_KEY[:8] + "..." if DEEPGRAM_API_KEY else "NOT SET"
     }
 
@@ -495,8 +560,30 @@ async def save_session(session_id: str):
     """Save session data to disk."""
     if session_id not in sessions:
         return {"error": "Not found"}
-    fpath = sessions[session_id].save_to_disk()
+    s = sessions[session_id]
+    fpath = s.save_to_disk()
+    # Track session_completed analytics
+    if _analytics_ok:
+        try:
+            word_count = len(s.full_transcript)
+            duration = int(time.time() - s.start_time)
+            _analytics.session_completed(s.user_email, session_id, duration, word_count)
+        except Exception:
+            pass
     return {"ok": True, "file": fpath.name}
+
+
+@app.post("/api/analytics/feature")
+async def track_feature(payload: dict, request: Request):
+    """Track feature usage from frontend."""
+    user = get_current_user(request)
+    feature = payload.get("feature", "unknown")
+    if _analytics_ok:
+        try:
+            _analytics.feature_used(user.get("email") if user else None, feature)
+        except Exception:
+            pass
+    return {"ok": True}
 
 
 @app.get("/session/{session_id}")
@@ -522,8 +609,17 @@ async def get_transcript(session_id: str):
 
 
 @app.get("/api/session/{session_id}/export")
-async def export_session(session_id: str):
-    """Export session as show notes markdown."""
+async def export_session(session_id: str, request: Request):
+    """Export session as show notes markdown. Requires beta+ tier."""
+    user = get_current_user(request)
+    if user:
+        tier_order = {"free": 0, "beta": 1, "pro": 2, "network": 3}
+        if tier_order.get(user.get("tier", "free"), 0) < 1:
+            from fastapi.responses import JSONResponse as _JR
+            return _JR({"error": "tier_required", "required": "beta"}, status_code=403)
+        if _analytics_ok:
+            try: _analytics.feature_used(user.get("email"), "export")
+            except Exception: pass
     if session_id not in sessions:
         return {"error": "Not found"}
     s = sessions[session_id]
@@ -581,16 +677,24 @@ def _build_show_notes(s: PodSession) -> str:
 # ── Sessions list (for history page) ────────────────────────────────────────
 
 @app.get("/api/sessions")
-async def list_sessions():
-    """List all saved sessions from disk."""
+async def list_sessions(request: Request):
+    """List saved sessions. If logged in, shows only user's sessions; otherwise all."""
+    user = get_current_user(request)
+    user_email = user.get("email") if user else None
     files = sorted(SESSIONS_DIR.glob("*.json"), reverse=True)
     result = []
     for f in files:
         try:
             data = json.loads(f.read_text())
+            owner = data.get("user_email", "")
+            # Filter: authenticated users see their own sessions only; anon sees anonymous sessions
+            if user_email:
+                if owner and owner != user_email:
+                    continue
             result.append({
                 "file": f.name,
                 "session_id": data.get("session_id", ""),
+                "user_email": owner,
                 "metadata": data.get("metadata", {}),
                 "duration_seconds": data.get("duration_seconds", 0),
                 "topics_count": len(data.get("topics_detected", [])),
@@ -678,8 +782,18 @@ def _build_show_notes_from_data(data: dict) -> str:
 # ── Guest Intel ──────────────────────────────────────────────────────────────
 
 @app.post("/api/guest-intel")
-async def guest_intel(payload: dict):
-    """Research a guest and return a structured brief."""
+async def guest_intel(payload: dict, request: Request):
+    """Research a guest and return a structured brief. Requires beta+ tier."""
+    # Tier check
+    user = get_current_user(request)
+    if user:
+        tier_order = {"free": 0, "beta": 1, "pro": 2, "network": 3}
+        if tier_order.get(user.get("tier", "free"), 0) < 1:
+            from fastapi.responses import JSONResponse as _JR
+            return _JR({"error": "tier_required", "required": "beta", "message": "Guest intel requires Beta or higher."}, status_code=403)
+        if _analytics_ok:
+            try: _analytics.feature_used(user.get("email"), "guest_intel")
+            except Exception: pass
     guest_name = payload.get("name", "")
     social_url = payload.get("social_url", "")
     if not guest_name:

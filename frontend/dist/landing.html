@@ -710,7 +710,93 @@
     <p style="color:var(--muted);font-size:13px;">© 2026 PodPal</p>
   </footer>
 
+  <!-- Checkout email modal -->
+  <div id="checkout-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;padding:24px;">
+    <div style="background:#13131a;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px 32px;max-width:400px;width:100%;position:relative;">
+      <button onclick="closeCheckoutModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:#6b7280;font-size:22px;cursor:pointer;">×</button>
+      <div style="font-size:22px;font-weight:800;color:#7c6df0;margin-bottom:4px;">Pod<span style="color:#4ecdc4">Pal</span></div>
+      <h2 id="co-title" style="font-size:20px;font-weight:700;margin-bottom:8px;color:#e8e8f0;"></h2>
+      <p style="font-size:14px;color:#6b7280;margin-bottom:24px;">Enter your email to create your account and go to checkout.</p>
+      <label style="display:block;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Email address</label>
+      <input id="co-email" type="email" placeholder="you@example.com" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);border-radius:10px;color:#e8e8f0;font-size:15px;padding:13px 15px;outline:none;margin-bottom:14px;" />
+      <div id="co-error" style="display:none;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:8px;color:#ff6060;font-size:13px;padding:10px 14px;margin-bottom:14px;"></div>
+      <button id="co-btn" onclick="submitCheckout()" style="width:100%;background:#7c6df0;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">Continue to checkout →</button>
+    </div>
+  </div>
+
   <script>
+    let _checkoutTier = null;
+
+    async function startCheckout(tier) {
+      _checkoutTier = tier;
+      // Check if already logged in
+      try {
+        const me = await fetch('/api/auth/me').then(r => r.json());
+        if (me.authenticated && me.user?.email) {
+          // Already logged in — go straight to checkout
+          await doCheckout(tier, me.user.email);
+          return;
+        }
+      } catch (e) {}
+      // Show email modal
+      const labels = { beta: 'Claim Beta Spot — $19/mo', pro: 'Get Pro — $79/mo', network: 'Book a Call' };
+      document.getElementById('co-title').textContent = labels[tier] || 'Get Started';
+      document.getElementById('co-email').value = '';
+      document.getElementById('co-error').style.display = 'none';
+      document.getElementById('co-btn').textContent = 'Continue to checkout →';
+      document.getElementById('co-btn').disabled = false;
+      document.getElementById('checkout-modal').style.display = 'flex';
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkout-modal').style.display = 'none';
+    }
+
+    async function submitCheckout() {
+      const email = document.getElementById('co-email').value.trim();
+      const errEl = document.getElementById('co-error');
+      errEl.style.display = 'none';
+      if (!email || !email.includes('@')) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.style.display = 'block';
+        return;
+      }
+      const btn = document.getElementById('co-btn');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      await doCheckout(_checkoutTier, email);
+      btn.disabled = false;
+      btn.textContent = 'Continue to checkout →';
+    }
+
+    async function doCheckout(tier, email) {
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier, email }),
+        });
+        const data = await res.json();
+        if (data.redirect) {
+          closeCheckoutModal();
+          window.location.href = data.redirect;
+        } else {
+          const errEl = document.getElementById('co-error');
+          errEl.textContent = data.detail || 'Checkout failed. Please try again.';
+          errEl.style.display = 'block';
+        }
+      } catch (e) {
+        const errEl = document.getElementById('co-error');
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('checkout-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeCheckoutModal();
+    });
+
     // Fade-in on scroll
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(el => {
