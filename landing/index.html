@@ -558,7 +558,7 @@
           <div style="font-size:22px;font-weight:800;margin-bottom:4px;">$19<span style="font-size:14px;font-weight:400;color:var(--muted)">/month · Locked for life</span></div>
           <div style="font-size:14px;color:var(--muted)">Full Pro access. Price never changes as long as you stay subscribed.</div>
         </div>
-        <button class="btn-big btn-primary" onclick="document.getElementById('waitlist').scrollIntoView()" style="white-space:nowrap;">Claim Beta Spot →</button>
+        <button class="btn-big btn-primary" onclick="startCheckout('beta')" style="white-space:nowrap;">Claim Beta Spot →</button>
       </div>
 
       <div class="pricing-grid">
@@ -574,7 +574,7 @@
             <li>Unlimited follow-up suggestions</li>
             <li>3 seats · Research archive 90 days</li>
           </ul>
-          <button class="price-cta price-cta-outline" onclick="document.getElementById('waitlist').scrollIntoView()">Get Started →</button>
+          <button class="price-cta price-cta-outline" onclick="startCheckout('pro')">Get Started →</button>
         </div>
         <div class="price-card featured fade-in">
           <div class="price-badge">🔥 Beta — 200 spots only</div>
@@ -589,7 +589,7 @@
             <li>First access to every new release</li>
             <li>Cancel anytime</li>
           </ul>
-          <button class="price-cta price-cta-primary" onclick="document.getElementById('waitlist').scrollIntoView()">Claim Beta Spot →</button>
+          <button class="price-cta price-cta-primary" onclick="startCheckout('beta')">Claim Beta Spot →</button>
         </div>
         <div class="price-card fade-in">
           <div class="price-tier">Network</div>
@@ -718,6 +718,30 @@
       });
     }, { threshold: 0.1 });
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Checkout — redirects to Stripe or Calendly
+    async function startCheckout(tier) {
+      const btn = event && event.target;
+      const originalText = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ tier, success_url: window.location.origin + '/?checkout=success', cancel_url: window.location.href })
+        });
+        if (!res.ok) throw new Error('Server error');
+        const data = await res.json();
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          throw new Error('No redirect URL');
+        }
+      } catch(e) {
+        if (btn) { btn.textContent = originalText; btn.disabled = false; }
+        alert('Something went wrong. Please try again or email hello@podpal.show');
+      }
+    }
 
     // Waitlist form
     async function joinWaitlist() {

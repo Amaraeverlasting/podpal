@@ -22,10 +22,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from stripe_handler import router as stripe_router
+from email_handler import send_waitlist_confirmation
+
 load_dotenv()
 
 app = FastAPI(title="PodPal", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(stripe_router)
 
 # Config
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
@@ -617,6 +621,12 @@ async def join_waitlist(payload: dict):
     entries.append(entry)
     wl_file.write_text(json.dumps(entries, indent=2))
     print(f"Waitlist signup: {entry['email']} - {entry['show']}")
+
+    # Send confirmation email (non-blocking)
+    asyncio.create_task(
+        send_waitlist_confirmation(entry["email"], entry["show"])
+    )
+
     return {"ok": True, "position": len(entries)}
 
 
