@@ -1091,7 +1091,8 @@
 
   <script>
     // ── State ─────────────────────────────────────────────────────
-    const BACKEND_URL = window.location.origin.replace(/^http/, 'ws');
+    // WebSocket URL - handles both http/https correctly
+    const BACKEND_URL = window.location.origin.replace(/^https/, 'wss').replace(/^http(?!s)/, 'ws');
     let ws            = null;
     let sessionId     = null;
     let mediaRecorder = null;
@@ -1151,18 +1152,26 @@
       const guest     = document.getElementById('guest-name').value;
       const notes     = document.getElementById('episode-notes').value;
 
-      const resp = await fetch('/session/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ host_profile: { name, show, topics, guest, notes } })
-      });
-      const data = await resp.json();
-      sessionId = data.session_id;
+      let resp, data;
+      try {
+        resp = await fetch('/session/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ host_profile: { name, show, topics, guest, notes } })
+        });
+        data = await resp.json();
+        sessionId = data.session_id;
+      } catch(err) {
+        console.error('Session create failed:', err);
+        toast('Could not connect to PodPal server. Check connection.');
+        return;
+      }
 
       ws = new WebSocket(`${BACKEND_URL}/ws/${sessionId}`);
-      ws.onopen    = () => toast('Connected to PodPal');
+      ws.onopen    = () => { console.log('WS connected'); toast('Connected to PodPal ✓'); };
       ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
-      ws.onclose   = () => {};
+      ws.onerror   = (err) => { console.error('WS error', err); toast('Connection issue - retrying...'); setTimeout(startSession, 2000); };
+      ws.onclose   = (e) => { if (isListening) { console.log('WS closed, reconnecting...'); setTimeout(startSession, 1500); } };
     }
 
     function showSetup() {
