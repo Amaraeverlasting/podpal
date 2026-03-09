@@ -719,12 +719,15 @@
     }, { threshold: 0.1 });
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-    // Checkout — redirects to Stripe or Calendly
+    // Checkout — redirects to PayFast or Calendly
     async function startCheckout(tier) {
       if (tier === 'network') {
         window.location.href = 'https://calendly.com/mic-mannmade';
         return;
       }
+      const email = prompt('Enter your email to continue:');
+      if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+      const name = prompt('Your name:') || '';
       const btn = event && event.target;
       const originalText = btn ? btn.textContent : '';
       if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
@@ -732,7 +735,7 @@
         const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ tier })
+          body: JSON.stringify({ tier, email, name })
         });
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
