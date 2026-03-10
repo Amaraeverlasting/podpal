@@ -182,6 +182,7 @@ def require_tier(minimum: str):
 @router.post("/api/auth/request-link")
 async def request_magic_link(payload: dict):
     email = (payload.get("email") or "").strip().lower()
+    next_url = (payload.get("next") or "").strip()
     if not email or "@" not in email:
         return JSONResponse({"error": "Valid email required"}, status_code=400)
 
@@ -197,7 +198,11 @@ async def request_magic_link(payload: dict):
     }
     _write(TOKENS_FILE, tokens)
 
-    verify_url = f"{BASE_URL}/api/auth/verify?token={token}"
+    from urllib.parse import urlencode
+    params = {"token": token}
+    if next_url:
+        params["next"] = next_url
+    verify_url = f"{BASE_URL}/api/auth/verify?{urlencode(params)}"
 
     # Send magic link email
     try:
@@ -210,7 +215,7 @@ async def request_magic_link(payload: dict):
 
 
 @router.get("/api/auth/verify")
-async def verify_magic_link(token: str):
+async def verify_magic_link(token: str, next: str = ""):
     tokens = _tokens()
     entry = tokens.get(token)
 
@@ -251,8 +256,12 @@ async def verify_magic_link(token: str):
     # Create session
     session_id = create_session(email, user.get("tier", "free"))
 
-    # Redirect: first-time users go to /welcome, returning users go to /app
-    redirect_url = "/welcome" if is_first else "/app"
+    # Redirect: honour ?next= param (e.g. /trial?code=XYZ), else welcome/app
+    from urllib.parse import unquote
+    if next:
+        redirect_url = unquote(next)
+    else:
+        redirect_url = "/welcome" if is_first else "/app"
 
     response = RedirectResponse(url=redirect_url, status_code=302)
     response.set_cookie(

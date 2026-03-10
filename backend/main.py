@@ -985,7 +985,9 @@ async def redeem_code_page(code: str, request: Request):
     user = get_current_user(request)
     if not user:
         # Store code in redirect URL so they can redeem after login
-        return RedirectResponse(url=f"/login?next=/trial?code={code}", status_code=302)
+        from urllib.parse import quote
+        next_url = quote(f"/trial?code={code}", safe="")
+        return RedirectResponse(url=f"/login?next={next_url}", status_code=302)
 
     email = user["email"]
     result = redeem_trial_code(code, email)

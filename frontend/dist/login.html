@@ -175,10 +175,12 @@
       btn.textContent = 'Sending...';
 
       try {
+        const params = new URLSearchParams(window.location.search);
+        const nextUrl = params.get('next') || '';
         const res = await fetch('/api/auth/request-link', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, next: nextUrl }),
         });
         const data = await res.json();
         if (res.ok && data.ok) {
