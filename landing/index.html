@@ -895,34 +895,50 @@
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
     // Checkout — redirects to PayFast or Calendly
-    async function startCheckout(tier) {
+    function startCheckout(tier) {
       if (tier === 'network') {
-        window.location.href = 'https://calendly.com/mic-mannmade';
+        window.open('https://calendly.com/mic-mannmade', '_blank');
         return;
       }
-      const email = prompt('Enter your email to continue:');
-      if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
-      const name = prompt('Your name:') || '';
-      const btn = event && event.target;
-      const originalText = btn ? btn.textContent : '';
-      if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
+      // Show inline checkout modal
+      const prices = { beta: '$19/mo', pro: '$79/mo' };
+      const labels = { beta: 'Beta', pro: 'Pro' };
+      document.getElementById('checkout-tier-label').textContent = labels[tier] || tier;
+      document.getElementById('checkout-price-label').textContent = prices[tier] || '';
+      document.getElementById('checkout-tier-input').value = tier;
+      document.getElementById('checkout-email').value = '';
+      document.getElementById('checkout-name').value = '';
+      document.getElementById('checkout-error').textContent = '';
+      document.getElementById('checkout-modal').style.display = 'flex';
+      setTimeout(() => document.getElementById('checkout-email').focus(), 100);
+    }
+
+    async function submitCheckout() {
+      const tier  = document.getElementById('checkout-tier-input').value;
+      const email = document.getElementById('checkout-email').value.trim();
+      const name  = document.getElementById('checkout-name').value.trim();
+      const errEl = document.getElementById('checkout-error');
+      const btn   = document.getElementById('checkout-submit-btn');
+      if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email.'; return; }
+      btn.textContent = 'Redirecting...'; btn.disabled = true; errEl.textContent = '';
       try {
         const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ tier, email, name })
         });
-        if (!res.ok) throw new Error('Server error');
         const data = await res.json();
         if (data.redirect) {
           window.location.href = data.redirect;
-        } else {
-          throw new Error('No redirect URL');
-        }
+        } else { throw new Error('No redirect'); }
       } catch(e) {
-        if (btn) { btn.textContent = originalText; btn.disabled = false; }
-        alert('Something went wrong. Please try again or email hello@podpal.show');
+        btn.textContent = 'Complete Purchase'; btn.disabled = false;
+        errEl.textContent = 'Something went wrong. Please try again or email hello@podpal.show';
       }
+    }
+
+    function closeCheckout() {
+      document.getElementById('checkout-modal').style.display = 'none';
     }
 
     // Waitlist form
@@ -952,5 +968,22 @@
     }
   </script>
 
+<!-- Checkout Modal -->
+<div id="checkout-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px;width:100%;max-width:420px;margin:16px;position:relative;">
+    <button onclick="closeCheckout()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#666;font-size:20px;cursor:pointer;">✕</button>
+    <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#7c6df0;margin-bottom:8px;">PodPal <span id="checkout-tier-label"></span></div>
+    <h2 style="color:#e8e8f2;font-size:22px;margin:0 0 4px;">Get started today</h2>
+    <p style="color:#666;font-size:14px;margin:0 0 24px;"><span id="checkout-price-label"></span> - no contracts, cancel any time.</p>
+    <label style="display:block;color:#9b9bba;font-size:13px;margin-bottom:6px;">Email</label>
+    <input id="checkout-email" type="email" placeholder="you@example.com" style="width:100%;background:#0a0a0f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#e8e8f2;font-size:15px;box-sizing:border-box;margin-bottom:14px;" onkeydown="if(event.key==='Enter')document.getElementById('checkout-name').focus()">
+    <label style="display:block;color:#9b9bba;font-size:13px;margin-bottom:6px;">Name</label>
+    <input id="checkout-name" type="text" placeholder="Your name" style="width:100%;background:#0a0a0f;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#e8e8f2;font-size:15px;box-sizing:border-box;margin-bottom:20px;" onkeydown="if(event.key==='Enter')submitCheckout()">
+    <input id="checkout-tier-input" type="hidden">
+    <div id="checkout-error" style="color:#f05050;font-size:13px;margin-bottom:12px;min-height:18px;"></div>
+    <button id="checkout-submit-btn" onclick="submitCheckout()" style="width:100%;background:#7c6df0;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;">Complete Purchase →</button>
+    <p style="color:#555;font-size:12px;text-align:center;margin:14px 0 0;">Secured by PayFast. You'll be redirected to complete payment.</p>
+  </div>
+</div>
 </body>
 </html>

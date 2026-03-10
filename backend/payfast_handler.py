@@ -28,8 +28,8 @@ PAYFAST_URL   = "https://sandbox.payfast.co.za/eng/process" if SANDBOX else "htt
 BASE_URL      = os.getenv("BASE_URL", "https://podpal.show")
 
 PRICES = {
-    "beta": {"amount": "349.00", "name": "PodPal Beta - R349/month"},
-    "pro":  {"amount": "1449.00", "name": "PodPal Pro - R1449/month"},
+    "beta": {"amount": "19.00", "name": "PodPal Beta - $19/month"},
+    "pro":  {"amount": "79.00", "name": "PodPal Pro - $79/month"},
 }
 
 
