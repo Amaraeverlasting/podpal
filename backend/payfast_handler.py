@@ -86,6 +86,11 @@ async def create_checkout(req: CheckoutRequest):
         "m_payment_id":      payment_id,
         "amount":            price["amount"],
         "item_name":         price["name"],
+        "subscription_type": "1",
+        "billing_date":      date.today().strftime("%Y-%m-%d"),
+        "recurring_amount":  price["amount"],
+        "frequency":         "3",
+        "cycles":            "0",
     }
 
     params["signature"] = _generate_signature(params)
