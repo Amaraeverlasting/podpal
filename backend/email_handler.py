@@ -1,51 +1,42 @@
 """
-PodPal email integration via Gmail SMTP (Google Workspace).
+PodPal email via Resend API (HTTPS - works on all cloud platforms).
 All keys from environment — no hardcoded values.
 """
 
 import os
-import smtplib
 import asyncio
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 
-GMAIL_USER     = os.getenv("GMAIL_USER", "hello@podpal.show")
-GMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 FROM_EMAIL     = "PodPal <hello@podpal.show>"
-
-
-def _send_smtp(to: str, subject: str, html: str) -> bool:
-    """Send email via Gmail SMTP. Runs synchronously (called via run_in_executor)."""
-    if not GMAIL_PASSWORD:
-        print(f"[email] GMAIL_APP_PASSWORD not set — skipping email to {to}")
-        return False
-    if not to or "@" not in to:
-        print(f"[email] Invalid recipient: {to!r}")
-        return False
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = FROM_EMAIL
-        msg["To"]      = to
-        msg.attach(MIMEText(html, "html"))
-
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(GMAIL_USER, GMAIL_PASSWORD)
-            server.sendmail(GMAIL_USER, to, msg.as_string())
-
-        print(f"[email] Sent '{subject}' → {to}")
-        return True
-    except Exception as e:
-        print(f"[email] Send failed: {e}")
-        return False
+RESEND_URL     = "https://api.resend.com/emails"
 
 
 async def _send(to: str, subject: str, html: str) -> bool:
     """Async wrapper — runs SMTP in thread pool so it doesn't block."""
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _send_smtp, to, subject, html)
+        """Send email via Resend API."""
+    if not RESEND_API_KEY:
+        print(f"[email] RESEND_API_KEY not set - skipping email to {to}")
+        return False
+    if not to or "@" not in to:
+        print(f"[email] Invalid recipient: {to!r}")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                RESEND_URL,
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                json={"from": FROM_EMAIL, "to": [to], "subject": subject, "html": html},
+            )
+            if resp.status_code in (200, 201):
+                print(f"[email] Sent '{subject}' to {to}")
+                return True
+            print(f"[email] Resend error {resp.status_code}: {resp.text}")
+            return False
+    except Exception as e:
+        print(f"[email] Send failed: {e}")
+        return False
 
 
 # ── Templates ─────────────────────────────────────────────────────────────────
