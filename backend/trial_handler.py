@@ -1,19 +1,21 @@
 """
 PodPal Trial Handler
-Manages the 10-minute free trial, trial codes, and comp access.
+7-day / 3-session / 60-minute free trial (whichever hits first).
 """
 
 import json
-import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR         = Path(__file__).parent.parent
 USERS_FILE       = BASE_DIR / "data" / "users.json"
 TRIAL_CODES_FILE = BASE_DIR / "data" / "trial_codes.json"
 
-TRIAL_LIMIT_SECONDS = 600  # 10 minutes
+TRIAL_DAYS          = 7
+TRIAL_SESSION_LIMIT = 3
+TRIAL_MINUTE_LIMIT  = 3600   # 60 minutes in seconds
+TRIAL_LIMIT_SECONDS = TRIAL_MINUTE_LIMIT  # backward-compat alias
 
 
 # ── File helpers ──────────────────────────────────────────────────────────────
@@ -47,28 +49,25 @@ def _write_trial_codes(data: dict):
 
 
 def _ensure_trial_fields(user: dict) -> dict:
-    """Add trial fields to a user dict if they're missing."""
     user.setdefault("trial_seconds_used", 0)
+    user.setdefault("trial_sessions_used", 0)
     user.setdefault("trial_started_at", None)
+    user.setdefault("trial_expires_at", None)
     user.setdefault("trial_expired", False)
+    user.setdefault("trial_expired_reason", None)
     user.setdefault("first_login", True)
     return user
 
 
-# ── Comp expiry check ─────────────────────────────────────────────────────────
+# ── Comp expiry ───────────────────────────────────────────────────────────────
 
 def check_comp_expiry(email: str, users: dict) -> dict:
-    """
-    If a user has a comp_expires date in the past, revert them to free.
-    Modifies the users dict in-place; caller must save.
-    """
     user = users.get(email, {})
     comp_expires = user.get("comp_expires")
     tier = user.get("tier", "free")
     if comp_expires and tier != "free":
         try:
-            exp_dt = datetime.fromisoformat(comp_expires)
-            if datetime.utcnow() > exp_dt:
+            if datetime.utcnow() > datetime.fromisoformat(comp_expires):
                 users[email]["tier"] = "free"
                 users[email]["subscription_status"] = "free"
         except Exception:
@@ -79,127 +78,160 @@ def check_comp_expiry(email: str, users: dict) -> dict:
 # ── Trial status ──────────────────────────────────────────────────────────────
 
 def get_trial_status(email: str) -> dict:
-    """Return trial status for a user.
-
-    Returns:
-        {tier, seconds_used, seconds_remaining, expired, percent_used, trial_limit}
-    """
     users = _read_users()
     users = check_comp_expiry(email, users)
     user = users.get(email, {})
     _ensure_trial_fields(user)
 
-    tier            = user.get("tier", "free")
-    seconds_used    = user.get("trial_seconds_used", 0)
-    expired         = user.get("trial_expired", False)
-    seconds_remaining = max(0, TRIAL_LIMIT_SECONDS - seconds_used)
-    percent_used    = min(100.0, round((seconds_used / TRIAL_LIMIT_SECONDS) * 100, 2))
+    tier          = user.get("tier", "free")
+    seconds_used  = user.get("trial_seconds_used", 0)
+    sessions_used = user.get("trial_sessions_used", 0)
+    expired       = user.get("trial_expired", False)
+    reason        = user.get("trial_expired_reason", None)
 
-    # Hard-expire if time is up and still free tier
-    if tier == "free" and seconds_remaining == 0:
-        expired = True
+    days_remaining = TRIAL_DAYS
+    trial_started_at = user.get("trial_started_at")
+    trial_expires_at = user.get("trial_expires_at")
+
+    if trial_started_at:
+        try:
+            started = datetime.fromisoformat(trial_started_at)
+            expires = (
+                datetime.fromisoformat(trial_expires_at)
+                if trial_expires_at
+                else started + timedelta(days=TRIAL_DAYS)
+            )
+            days_remaining = max(0, (expires - datetime.utcnow()).days)
+        except Exception:
+            pass
+
+    seconds_remaining  = max(0, TRIAL_MINUTE_LIMIT - seconds_used)
+    sessions_remaining = max(0, TRIAL_SESSION_LIMIT - sessions_used)
+
+    # Auto-expire for free tier
+    if tier == "free" and not expired:
+        if seconds_remaining == 0:
+            expired, reason = True, "minutes"
+        elif sessions_used >= TRIAL_SESSION_LIMIT:
+            expired, reason = True, "sessions"
+        elif days_remaining == 0 and trial_started_at:
+            expired, reason = True, "time"
+
+    pct_seconds  = (seconds_used / TRIAL_MINUTE_LIMIT) * 100
+    pct_sessions = (sessions_used / TRIAL_SESSION_LIMIT) * 100
+    days_used    = TRIAL_DAYS - days_remaining
+    pct_days     = (days_used / TRIAL_DAYS) * 100
+    percent_used = min(100.0, round(max(pct_seconds, pct_sessions, pct_days), 2))
 
     return {
         "tier": tier,
         "seconds_used": seconds_used,
         "seconds_remaining": seconds_remaining,
+        "sessions_used": sessions_used,
+        "sessions_remaining": sessions_remaining,
+        "days_remaining": days_remaining,
         "expired": expired,
         "percent_used": percent_used,
-        "trial_limit": TRIAL_LIMIT_SECONDS,
+        "reason": reason,
+        "trial_limit": TRIAL_MINUTE_LIMIT,
     }
 
 
-def add_trial_time(email: str, seconds: int) -> dict:
-    """Add recording seconds to a user's trial counter.
-
-    Non-free-tier users skip the counter.
-    Returns updated trial status.
-    """
+def increment_trial_sessions(email: str) -> dict:
+    """Call when a free-tier user starts a new session."""
     users = _read_users()
-    users = check_comp_expiry(email, users)
-
     if email not in users:
         return get_trial_status(email)
-
     user = users[email]
     _ensure_trial_fields(user)
-
-    tier = user.get("tier", "free")
-    if tier != "free":
+    if user.get("tier", "free") != "free":
+        return get_trial_status(email)
+    if user.get("trial_expired"):
         return get_trial_status(email)
 
-    if user.get("trial_expired", False):
-        return get_trial_status(email)
-
-    # Mark start time on first tick
     if not user.get("trial_started_at"):
-        user["trial_started_at"] = datetime.utcnow().isoformat()
+        now = datetime.utcnow()
+        user["trial_started_at"] = now.isoformat()
+        user["trial_expires_at"] = (now + timedelta(days=TRIAL_DAYS)).isoformat()
 
-    user["trial_seconds_used"] = min(
-        TRIAL_LIMIT_SECONDS,
-        user.get("trial_seconds_used", 0) + seconds
-    )
-
-    if user["trial_seconds_used"] >= TRIAL_LIMIT_SECONDS:
-        user["trial_expired"] = True
+    user["trial_sessions_used"] = user.get("trial_sessions_used", 0) + 1
+    if user["trial_sessions_used"] >= TRIAL_SESSION_LIMIT:
+        user["trial_expired"]        = True
+        user["trial_expired_reason"] = "sessions"
 
     users[email] = user
     _write_users(users)
     return get_trial_status(email)
 
 
-def expire_trial(email: str) -> dict:
-    """Force-expire a user's trial."""
+def add_trial_time(email: str, seconds: int) -> dict:
+    users = _read_users()
+    users = check_comp_expiry(email, users)
+    if email not in users:
+        return get_trial_status(email)
+    user = users[email]
+    _ensure_trial_fields(user)
+
+    if user.get("tier", "free") != "free" or user.get("trial_expired"):
+        return get_trial_status(email)
+
+    if not user.get("trial_started_at"):
+        now = datetime.utcnow()
+        user["trial_started_at"] = now.isoformat()
+        user["trial_expires_at"] = (now + timedelta(days=TRIAL_DAYS)).isoformat()
+
+    user["trial_seconds_used"] = min(
+        TRIAL_MINUTE_LIMIT,
+        user.get("trial_seconds_used", 0) + seconds
+    )
+    if user["trial_seconds_used"] >= TRIAL_MINUTE_LIMIT:
+        user["trial_expired"]        = True
+        user["trial_expired_reason"] = "minutes"
+
+    users[email] = user
+    _write_users(users)
+    return get_trial_status(email)
+
+
+def expire_trial(email: str, reason: str = None) -> dict:
     users = _read_users()
     if email in users:
         _ensure_trial_fields(users[email])
         users[email]["trial_expired"] = True
+        if reason:
+            users[email]["trial_expired_reason"] = reason
         _write_users(users)
     return get_trial_status(email)
 
 
 def is_trial_expired(email: str) -> bool:
-    """Quick check: is the trial expired?"""
     return get_trial_status(email)["expired"]
 
 
 # ── Trial codes ───────────────────────────────────────────────────────────────
 
 def create_trial_code(code: str, tier: str = "pro", days: int = 7) -> dict:
-    """Create a new trial code. Returns the code entry."""
     data = _read_trial_codes()
     code = code.upper().strip()
     if code not in data.get("codes", {}):
         data.setdefault("codes", {})[code] = {
-            "used":       False,
-            "used_by":    None,
-            "used_at":    None,
+            "used": False, "used_by": None, "used_at": None,
             "created_at": datetime.utcnow().isoformat(),
-            "tier":       tier,
-            "days":       days,
+            "tier": tier, "days": days,
         }
         _write_trial_codes(data)
     return data["codes"][code]
 
 
 def list_trial_codes() -> list:
-    """List all trial codes with usage info."""
     data = _read_trial_codes()
-    result = []
-    for code, entry in data.get("codes", {}).items():
-        result.append({"code": code, **entry})
-    return result
+    return [{"code": c, **e} for c, e in data.get("codes", {}).items()]
 
 
 def redeem_trial_code(code: str, email: str) -> dict:
-    """Redeem a trial code for an email address.
-
-    Returns: {ok: bool, tier, days, expires} or {ok: False, error: str}
-    """
-    data = _read_trial_codes()
-    code = code.upper().strip()
+    data  = _read_trial_codes()
+    code  = code.upper().strip()
     entry = data.get("codes", {}).get(code)
-
     if not entry:
         return {"ok": False, "error": "Invalid code"}
     if entry.get("used"):
@@ -209,18 +241,14 @@ def redeem_trial_code(code: str, email: str) -> dict:
     days    = entry.get("days", 7)
     expires = (datetime.utcnow() + timedelta(days=days)).isoformat()
 
-    # Update user
     users = _read_users()
     if email not in users:
         users[email] = {
-            "email":               email,
-            "tier":                tier,
-            "created_at":          datetime.utcnow().isoformat(),
-            "last_seen":           datetime.utcnow().isoformat(),
-            "sessions":            [],
-            "subscription_status": "comp",
+            "email": email, "tier": tier,
+            "created_at": datetime.utcnow().isoformat(),
+            "last_seen": datetime.utcnow().isoformat(),
+            "sessions": [], "subscription_status": "comp",
         }
-
     _ensure_trial_fields(users[email])
     users[email]["tier"]                   = tier
     users[email]["subscription_status"]    = "comp"
@@ -228,41 +256,24 @@ def redeem_trial_code(code: str, email: str) -> dict:
     users[email]["trial_override_expires"] = expires
     _write_users(users)
 
-    # Mark code used
-    data["codes"][code]["used"]    = True
-    data["codes"][code]["used_by"] = email
-    data["codes"][code]["used_at"] = datetime.utcnow().isoformat()
+    data["codes"][code].update({"used": True, "used_by": email, "used_at": datetime.utcnow().isoformat()})
     _write_trial_codes(data)
-
     return {"ok": True, "tier": tier, "days": days, "expires": expires}
 
 
-# ── Comp access (admin) ───────────────────────────────────────────────────────
-
 def grant_comp_access(email: str, tier: str, days: int) -> dict:
-    """Grant complimentary access to any user (admin action)."""
     users = _read_users()
     if email not in users:
         users[email] = {
-            "email":               email,
-            "tier":                tier,
-            "created_at":          datetime.utcnow().isoformat(),
-            "last_seen":           datetime.utcnow().isoformat(),
-            "sessions":            [],
-            "subscription_status": "comp",
+            "email": email, "tier": tier,
+            "created_at": datetime.utcnow().isoformat(),
+            "last_seen": datetime.utcnow().isoformat(),
+            "sessions": [], "subscription_status": "comp",
         }
-
     _ensure_trial_fields(users[email])
     expires = (datetime.utcnow() + timedelta(days=days)).isoformat()
     users[email]["tier"]                = tier
     users[email]["subscription_status"] = "comp"
     users[email]["comp_expires"]        = expires
     _write_users(users)
-
-    return {
-        "ok":      True,
-        "email":   email,
-        "tier":    tier,
-        "days":    days,
-        "expires": expires,
-    }
+    return {"ok": True, "email": email, "tier": tier, "days": days, "expires": expires}

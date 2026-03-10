@@ -111,13 +111,11 @@ def _magic_link_html(email: str, link: str) -> str:
 def _welcome_trial_html(email: str) -> str:
     content = """
     <div class="badge">Welcome</div>
-    <h1>Your 10 minutes start now</h1>
-    <p>PodPal listens while you record. As you talk, it surfaces live research, suggests follow-up questions, and spots fact-check moments - all without you lifting a finger.</p>
-    <p>In your 10-minute trial you get the full thing: real-time research cards, AI-suggested questions, and a session summary with social posts when you stop.</p>
-    <p style="margin-bottom:4px;"><span class="highlight">When you upgrade to Beta ($19/mo) you unlock:</span></p>
-    <p style="margin-top:0;">Unlimited sessions, guest intel pre-load before you go live, show notes export, and the AI question suggester on demand.</p>
+    <h1>Welcome to PodPal - your 3 sessions start now</h1>
+    <p>PodPal listens while you record. It surfaces live research cards mid-conversation, pre-loads your guest's bio before you hit record, and generates full show notes plus 3 social posts when you stop. No prep needed.</p>
+    <p>Start now: open the app, type your guest's name, hit record. Watch what happens.</p>
     <a href="https://podpal.show/app" class="btn">Open the app →</a>
-    <p style="margin-top:24px;font-size:13px;color:#555570;">Questions? Just reply - we read every one.</p>"""
+    <p style="margin-top:24px;font-size:13px;color:#555570;">You have 3 free sessions over 7 days. No card needed. Questions? Just reply.</p>"""
     return _base_layout(content)
 
 
@@ -125,10 +123,16 @@ def _trial_expired_html(email: str) -> str:
     content = """
     <div class="badge" style="background:rgba(124,109,240,0.15);color:#7c6df0;border-color:rgba(124,109,240,0.3);">Trial Complete</div>
     <h1>Your PodPal trial is up</h1>
-    <p>You just saw PodPal work in real time - research surfacing as you talk, questions appearing when you need them, and a summary waiting when you stop.</p>
-    <p>Beta gets you all of that with no time limit, plus guest intel before you go live and show notes ready to publish. It's <span class="highlight">$19/mo</span> and you can cancel anytime.</p>
-    <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta - $19/mo →</a>
-    <p style="margin-top:20px;font-size:13px;color:#555570;">Not ready yet? No pressure. Your session data is saved. Come back when you are.</p>"""
+    <p>Here is what you had:</p>
+    <p>
+      Live research cards appearing mid-conversation.<br/>
+      Guest intel pre-loaded before you record.<br/>
+      Auto-generated show notes and 3 social posts.<br/>
+      Live question suggestions during your session.
+    </p>
+    <p>Keep all of it for <span class="highlight">$19/month</span>. No contracts. Cancel any time.</p>
+    <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta - $19/mo</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">Your session data is saved. Come back when you are ready.</p>"""
     return _base_layout(content)
 
 
@@ -188,3 +192,54 @@ async def send_waitlist_confirmation(email: str, show: str = "") -> bool:
 
 async def send_payment_failed_email(email: str) -> bool:
     return await _send(email, "PodPal: payment failed - action needed", _payment_failed_html(email))
+
+
+# ── Drip email templates ───────────────────────────────────────────────────────
+
+def _day3_html_no_sessions() -> str:
+    content = """
+    <div class="badge">Day 3</div>
+    <h1>Have you tried it yet?</h1>
+    <p>It takes 60 seconds to start. Open the app, type your guest's name, hit record. That is it.</p>
+    <p>PodPal does the rest while you talk.</p>
+    <a href="https://podpal.show/app" class="btn">Start now →</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">You have 3 free sessions over 7 days. No card needed.</p>"""
+    return _base_layout(content)
+
+
+def _day3_html_has_sessions(sessions_used: int) -> str:
+    content = f"""
+    <div class="badge">Day 3</div>
+    <h1>How was your first session?</h1>
+    <p>You have recorded {sessions_used} session{"s" if sessions_used != 1 else ""} so far. Good start.</p>
+    <p>One tip: type your guest's name before you hit record. You will see why - the intel that loads before you go live changes how you open.</p>
+    <a href="https://podpal.show/app" class="btn">Record another session →</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">2 sessions remaining in your trial.</p>"""
+    return _base_layout(content)
+
+
+def _day6_html() -> str:
+    content = """
+    <div class="badge" style="background:rgba(255,165,0,0.12);color:#f0a040;border-color:rgba(255,165,0,0.3);">Trial Ending</div>
+    <h1>Your PodPal trial ends tomorrow</h1>
+    <p>You have until tomorrow. After that, recording stops.</p>
+    <p>Beta is <span class="highlight">$19/month</span> - same price it will be at launch, locked in for life if you grab it now.</p>
+    <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta - $19/mo</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">No contracts. Cancel any time.</p>"""
+    return _base_layout(content)
+
+
+# ── Drip send functions ────────────────────────────────────────────────────────
+
+async def send_trial_day3_email(email: str, sessions_used: int = 0) -> bool:
+    if sessions_used == 0:
+        subject = "Have you tried it yet?"
+        html    = _day3_html_no_sessions()
+    else:
+        subject = "How was your first session?"
+        html    = _day3_html_has_sessions(sessions_used)
+    return await _send(email, subject, html)
+
+
+async def send_trial_day6_email(email: str) -> bool:
+    return await _send(email, "Your PodPal trial ends tomorrow", _day6_html())

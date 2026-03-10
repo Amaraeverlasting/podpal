@@ -244,7 +244,7 @@ async def verify_magic_link(token: str, next: str = ""):
 
     update_user_last_seen(email)
 
-    # Trigger welcome email on first login (async, non-blocking)
+    # Trigger welcome email + schedule drip sequence on first login
     if is_first:
         import asyncio
         try:
@@ -252,6 +252,22 @@ async def verify_magic_link(token: str, next: str = ""):
             asyncio.create_task(send_welcome_trial_email(email))
         except Exception as e:
             print(f"[auth] Welcome email error: {e}")
+
+        # Schedule drip emails in users.json
+        try:
+            from datetime import timedelta
+            users_now = _users()
+            if email in users_now:
+                now = datetime.utcnow()
+                users_now[email]["drip_day3_at"]   = (now + timedelta(days=3)).isoformat()
+                users_now[email]["drip_day6_at"]   = (now + timedelta(days=6)).isoformat()
+                users_now[email]["drip_day7_at"]   = (now + timedelta(days=7)).isoformat()
+                users_now[email]["drip_day3_sent"] = False
+                users_now[email]["drip_day6_sent"] = False
+                users_now[email]["drip_day7_sent"] = False
+                _write(USERS_FILE, users_now)
+        except Exception as e:
+            print(f"[auth] Drip schedule error: {e}")
 
     # Create session
     session_id = create_session(email, user.get("tier", "free"))
@@ -326,6 +342,17 @@ async def serve_dashboard(request: Request):
     return HTMLResponse("<h2>Dashboard not found</h2>", status_code=404)
 
 
+@router.get("/profile")
+async def serve_profile(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    profile_html = FRONTEND_DIR / "profile.html"
+    if profile_html.exists():
+        return HTMLResponse(profile_html.read_text())
+    return HTMLResponse("<h2>Profile page not found</h2>", status_code=404)
+
+
 @router.get("/admin")
 async def serve_admin(request: Request):
     user = get_current_user(request)
@@ -376,13 +403,35 @@ async def dashboard_data(request: Request):
                 pass
 
     total_duration = sum(s.get("duration_seconds", 0) for s in user_sessions)
+
+    # Trial status
+    trial_status = {}
+    try:
+        from trial_handler import get_trial_status
+        trial_status = get_trial_status(email)
+    except Exception:
+        pass
+
+    # Sessions this month
+    from datetime import datetime as _dt
+    this_month = _dt.utcnow().strftime("%Y-%m")
+    sessions_this_month = sum(
+        1 for s in user_sessions
+        if (s.get("date") or "").startswith(this_month)
+    )
+
     return {
         "user": user,
-        "sessions": user_sessions,
+        "sessions": user_sessions[:5],
+        "all_sessions_count": len(user_sessions),
+        "trial_status": trial_status,
         "stats": {
             "total_sessions": len(user_sessions),
+            "sessions_this_month": sessions_this_month,
             "total_recording_seconds": total_duration,
+            "total_minutes": total_duration // 60,
             "posts_generated": sum(len(s.get("social_posts", [])) for s in user_sessions),
+            "show_notes_generated": sum(1 for s in user_sessions if s.get("show_notes")),
         }
     }
 

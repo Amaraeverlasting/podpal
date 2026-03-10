@@ -540,13 +540,39 @@
   <div id="trial-expired-modal" class="hidden">
     <div class="trial-modal-box">
       <div class="trial-modal-icon">🎙</div>
-      <div class="trial-modal-title">Your 10-minute trial is complete</div>
-      <div class="trial-modal-body">You've seen what PodPal can do. Ready to keep going?</div>
+      <div class="trial-modal-title">Your trial is up.</div>
+      <div class="trial-modal-body">
+        Here is what you had:<br><br>
+        <span style="color:#e8e8f0">✓</span> Live research cards appearing mid-conversation<br>
+        <span style="color:#e8e8f0">✓</span> Guest intel pre-loaded before you record<br>
+        <span style="color:#e8e8f0">✓</span> Auto-generated show notes + 3 social posts<br>
+        <span style="color:#e8e8f0">✓</span> Live question suggestions during your session<br><br>
+        Keep all of it for $19/month.
+      </div>
       <div class="trial-modal-btns">
         <a href="/dashboard" class="trial-modal-upgrade">Upgrade to Beta - $19/mo</a>
         <button class="trial-modal-later" onclick="dismissTrialModal()">Maybe later</button>
       </div>
-      <div class="trial-modal-features">Beta includes: unlimited sessions, guest intel pre-load, show notes export, question suggester</div>
+      <div class="trial-modal-features">No contracts. Cancel any time.</div>
+    </div>
+  </div>
+
+  <!-- Profile Prompt Modal (shown after first session) -->
+  <div id="profile-prompt-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:190;padding:24px;">
+    <div style="background:#13131a;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:36px 32px;max-width:420px;width:100%;">
+      <h2 style="font-size:19px;font-weight:800;color:#e8e8f0;margin-bottom:8px;">Your show notes are generating...</h2>
+      <p style="font-size:14px;color:#6b7280;margin-bottom:24px;line-height:1.6;">Tell us about your podcast while we build them.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+        <input id="pp-name" placeholder="First name" style="background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 14px;font-size:14px;color:#e8e8f0;width:100%;" />
+        <input id="pp-show" placeholder="Podcast / show name" style="background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 14px;font-size:14px;color:#e8e8f0;width:100%;" />
+        <select id="pp-freq" style="background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 14px;font-size:14px;color:#e8e8f0;width:100%;cursor:pointer;">
+          <option value="">Episode frequency</option>
+          <option>Daily</option><option>Weekly</option><option>Bi-weekly</option><option>Monthly</option>
+        </select>
+        <textarea id="pp-desc" placeholder="Show description (optional)" rows="3" style="background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 14px;font-size:14px;color:#e8e8f0;width:100%;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <button onclick="submitProfilePrompt()" style="background:#7c6df0;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px;">Save and see my show notes &rarr;</button>
+      <div style="text-align:center;"><button onclick="skipProfilePrompt()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;">Skip for now</button></div>
     </div>
   </div>
 
@@ -732,7 +758,7 @@
         case 'topic_update':       updateTopic(msg.topic, msg.changed, msg.suggested_questions, msg.fact_checks); break;
         case 'research_update':    updateResearch(msg.research, msg.source, msg.topic, msg.source_url); break;
         case 'fact_check':         addFactCheck(msg.claim, msg.result, msg.source); break;
-        case 'session_summary':    showSummaryModal(msg); break;
+        case 'session_summary':    maybeShowProfilePrompt(msg); break;
         case 'question_suggestion': showAIQuestion(msg.question); break;
         case 'trial_expired':      handleTrialExpired(); break;
       }
@@ -922,6 +948,59 @@
       document.getElementById('summary-posts-section').style.display = 'none';
       document.getElementById('summary-notes-section').style.display = 'none';
       document.querySelector('.summary-footer').style.display = 'none';
+    }
+
+    // Profile prompt: intercept first session summary
+    let _pendingSummaryData = null;
+    let _profilePromptShown = false;
+
+    function maybeShowProfilePrompt(data) {
+      // Check if profile has been shown before
+      fetch('/api/profile').then(r => r.ok ? r.json() : null).then(profile => {
+        const shown = profile && (profile.profile_shown || profile.profile_completed);
+        if (!shown && !_profilePromptShown) {
+          _profilePromptShown  = true;
+          _pendingSummaryData  = data;
+          const modal = document.getElementById('profile-prompt-modal');
+          modal.style.display = 'flex';
+          modal.classList.remove('hidden');
+        } else {
+          showSummaryModal(data);
+        }
+      }).catch(() => showSummaryModal(data));
+    }
+
+    async function submitProfilePrompt() {
+      const payload = {
+        name:              document.getElementById('pp-name').value.trim(),
+        show_name:         document.getElementById('pp-show').value.trim(),
+        episode_frequency: document.getElementById('pp-freq').value,
+        show_description:  document.getElementById('pp-desc').value.trim(),
+      };
+      try {
+        await fetch('/api/profile/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (_) {}
+      closeProfilePrompt();
+    }
+
+    function skipProfilePrompt() {
+      fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).catch(() => {});
+      closeProfilePrompt();
+    }
+
+    function closeProfilePrompt() {
+      const modal = document.getElementById('profile-prompt-modal');
+      modal.style.display = 'none';
+      modal.classList.add('hidden');
+      if (_pendingSummaryData) showSummaryModal(_pendingSummaryData);
     }
 
     function showSummaryModal(data) {

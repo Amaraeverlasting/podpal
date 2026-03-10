@@ -55,6 +55,7 @@ except Exception as e:
 try:
     from trial_handler import (
         get_trial_status, add_trial_time, is_trial_expired,
+        increment_trial_sessions, expire_trial,
         redeem_trial_code, create_trial_code, list_trial_codes, grant_comp_access,
         TRIAL_LIMIT_SECONDS,
     )
@@ -62,6 +63,13 @@ try:
 except Exception as e:
     print(f"[WARN] Trial handler failed to load: {e}")
     _trial_ok = False
+
+try:
+    from profile_handler import router as profile_router
+    _profile_ok = True
+except Exception as e:
+    print(f"[WARN] Profile handler failed to load: {e}")
+    _profile_ok = False
 
 load_dotenv()
 
@@ -71,6 +79,8 @@ if _payfast_ok:
     app.include_router(payfast_router)
 if _auth_ok:
     app.include_router(auth_router)
+if _profile_ok:
+    app.include_router(profile_router)
 
 # ── Page-view middleware ──────────────────────────────────────────────────────
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -535,12 +545,12 @@ Rules:
 
 @app.post("/session/create")
 async def create_session(payload: dict, request: Request):
-    session_id = f"session_{int(time.time())}"
+    session_id   = f"session_{int(time.time())}"
     host_profile = payload.get("host_profile", {})
     sessions[session_id] = PodSession(session_id, host_profile)
 
     # Associate with logged-in user
-    user = get_current_user(request)
+    user       = get_current_user(request)
     user_email = None
     if user:
         user_email = user.get("email")
@@ -550,6 +560,15 @@ async def create_session(payload: dict, request: Request):
             add_session_to_user(user_email, session_id)
         except Exception:
             pass
+
+        # Trial gate: free tier only
+        if _trial_ok and user.get("tier", "free") == "free":
+            if is_trial_expired(user_email):
+                return JSONResponse(
+                    {"error": "trial_expired", "type": "trial_expired"},
+                    status_code=403
+                )
+            increment_trial_sessions(user_email)
 
     # Track analytics
     if _analytics_ok:
@@ -1102,3 +1121,107 @@ async def serve_history():
 
 if landing_dir.exists():
     app.mount("/", StaticFiles(directory=str(landing_dir), html=True), name="landing")
+
+
+# ── Drip email background task ────────────────────────────────────────────────
+
+async def _drip_loop():
+    """Background task: checks every hour and sends scheduled drip emails."""
+    import time as _time
+    while True:
+        try:
+            await asyncio.sleep(3600)  # run every hour
+            _run_drip_check()
+        except Exception as e:
+            print(f"[drip] Loop error: {e}")
+
+
+def _run_drip_check():
+    try:
+        from pathlib import Path as _Path
+        import json as _json
+        from datetime import datetime as _dt
+
+        users_path = BASE_DIR / "data" / "users.json"
+        if not users_path.exists():
+            return
+        users = _json.loads(users_path.read_text())
+        now   = _dt.utcnow()
+        changed = False
+
+        for email, user in users.items():
+            if not email or "@" not in email:
+                continue
+            tier = user.get("tier", "free")
+
+            # Day 3
+            d3_at   = user.get("drip_day3_at")
+            d3_sent = user.get("drip_day3_sent", False)
+            if d3_at and not d3_sent and tier == "free":
+                try:
+                    if now >= _dt.fromisoformat(d3_at):
+                        sessions_used = user.get("trial_sessions_used", 0)
+                        asyncio.create_task(_send_drip3(email, sessions_used))
+                        users[email]["drip_day3_sent"] = True
+                        changed = True
+                except Exception as e:
+                    print(f"[drip] Day3 error {email}: {e}")
+
+            # Day 6
+            d6_at   = user.get("drip_day6_at")
+            d6_sent = user.get("drip_day6_sent", False)
+            if d6_at and not d6_sent and tier == "free":
+                try:
+                    if now >= _dt.fromisoformat(d6_at):
+                        asyncio.create_task(_send_drip6(email))
+                        users[email]["drip_day6_sent"] = True
+                        changed = True
+                except Exception as e:
+                    print(f"[drip] Day6 error {email}: {e}")
+
+            # Day 7
+            d7_at   = user.get("drip_day7_at")
+            d7_sent = user.get("drip_day7_sent", False)
+            if d7_at and not d7_sent and tier == "free":
+                try:
+                    if now >= _dt.fromisoformat(d7_at):
+                        asyncio.create_task(_send_drip7(email))
+                        users[email]["drip_day7_sent"] = True
+                        changed = True
+                except Exception as e:
+                    print(f"[drip] Day7 error {email}: {e}")
+
+        if changed:
+            users_path.write_text(_json.dumps(users, indent=2))
+    except Exception as e:
+        print(f"[drip] Check error: {e}")
+
+
+async def _send_drip3(email: str, sessions_used: int):
+    try:
+        from email_handler import send_trial_day3_email
+        await send_trial_day3_email(email, sessions_used)
+    except Exception as e:
+        print(f"[drip] Day3 send error: {e}")
+
+
+async def _send_drip6(email: str):
+    try:
+        from email_handler import send_trial_day6_email
+        await send_trial_day6_email(email)
+    except Exception as e:
+        print(f"[drip] Day6 send error: {e}")
+
+
+async def _send_drip7(email: str):
+    try:
+        from email_handler import send_trial_expired_email
+        await send_trial_expired_email(email)
+    except Exception as e:
+        print(f"[drip] Day7 send error: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(_drip_loop())
+    print("[podpal] Drip email scheduler started")
