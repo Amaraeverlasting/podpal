@@ -6,7 +6,8 @@
       "used_at": null,
       "created_at": "2026-03-10T08:00:00",
       "tier": "pro",
-      "days": 7
+      "days": 7,
+      "note": "Cathy Hackl - Wednesday session guest"
     },
     "LAUNCH50": {
       "used": false,
@@ -14,7 +15,71 @@
       "used_at": null,
       "created_at": "2026-03-10T08:00:00",
       "tier": "beta",
-      "days": 30
+      "days": 30,
+      "note": "General launch code"
+    },
+    "GARETH2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Tier 1 outreach - Gareth Cliff"
+    },
+    "PHIL2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Tier 1 outreach - Phil Mphela"
+    },
+    "ABRAMJEE2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Tier 1 outreach - Yusuf Abramjee"
+    },
+    "TECHCABAL2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Tier 1 outreach - TechCabal"
+    },
+    "SIYA2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Tier 1 outreach - Siya Xuza"
+    },
+    "LAUNCH2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "General outreach code"
+    },
+    "AFRICA2026": {
+      "used": false,
+      "used_by": null,
+      "used_at": null,
+      "created_at": "2026-03-10T13:58:00",
+      "tier": "beta",
+      "days": 14,
+      "note": "Africa-focused general outreach code"
     }
   }
 }
