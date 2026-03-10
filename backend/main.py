@@ -963,8 +963,8 @@ async def trial_tick(payload: dict, request: Request):
             if getattr(sess, "user_email", None) == email:
                 asyncio.create_task(sess.broadcast({"type": "trial_expired"}))
 
-    # Send trial reminder email at 8 minutes (480s) - only once
-    if _email_ok and status.get("seconds_used", 0) >= 480 and not status.get("expired"):
+    # Send trial reminder email after 2nd session (1 remaining) - only once
+    if _email_ok and status.get("sessions_used", 0) >= 2 and not status.get("expired"):
         reminder_sent_key = f"trial_reminder_sent_{email}"
         if not _tick_state.get(reminder_sent_key):
             _tick_state[reminder_sent_key] = True

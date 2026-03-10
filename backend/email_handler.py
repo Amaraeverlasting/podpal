@@ -91,7 +91,7 @@ def _magic_link_html(email: str, link: str) -> str:
     content = f"""
     <div class="badge">Login Link</div>
     <h1>Here's your PodPal link</h1>
-    <p>You've got <span class="highlight">10 minutes of free recording</span> waiting for you. Click below to open the app - this link expires in 15 minutes.</p>
+    <p>You have <span class="highlight">3 free sessions over 7 days</span> waiting. No card needed. Click below to open the app - this link expires in 15 minutes.</p>
     <a href="{link}" class="btn">Open PodPal →</a>
     <p style="margin-top:20px;font-size:13px;color:#555570;">Didn't request this? Ignore it. The link expires in 15 minutes and nothing happens if you don't click.</p>"""
     return _base_layout(content)
@@ -127,12 +127,12 @@ def _trial_expired_html(email: str) -> str:
 
 def _trial_reminder_html(email: str) -> str:
     content = """
-    <div class="badge" style="background:rgba(255,165,0,0.12);color:#f0a040;border-color:rgba(255,165,0,0.3);">2 Minutes Left</div>
-    <h1>2 minutes left on your trial</h1>
-    <p>You're at 8 minutes in. PodPal stops recording at 10 minutes for free accounts.</p>
-    <p>If you want to keep going - now or for any future episode - Beta is <span class="highlight">$19/mo</span> with no recording limits.</p>
+    <div class="badge" style="background:rgba(255,165,0,0.12);color:#f0a040;border-color:rgba(255,165,0,0.3);">Trial Ending Soon</div>
+    <h1>One session left on your trial</h1>
+    <p>You've used 2 of your 3 free sessions. One session left before your trial ends.</p>
+    <p>If you want to keep going - now or for any future episode - Beta is <span class="highlight">$19/mo</span> with unlimited sessions and no time limits.</p>
     <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta →</a>
-    <p style="margin-top:20px;font-size:13px;color:#555570;">Already done? Your summary and social posts are generating now.</p>"""
+    <p style="margin-top:20px;font-size:13px;color:#555570;">Already done? Your summary and social posts are ready in the app.</p>"""
     return _base_layout(content)
 
 
@@ -166,15 +166,15 @@ async def send_magic_link_email(email: str, link: str) -> bool:
 
 async def send_welcome_trial_email(email: str) -> bool:
     """Sent on first login - not on magic link request."""
-    return await _send(email, "Welcome to PodPal - your 10 minutes start now", _welcome_trial_html(email))
+    return await _send(email, "Welcome to PodPal - your 3 sessions start now", _welcome_trial_html(email))
 
 async def send_trial_expired_email(email: str) -> bool:
-    """Sent when the 10-minute trial runs out."""
+    """Sent when the 7-day / 3-session / 60-minute trial runs out."""
     return await _send(email, "Your PodPal trial is up", _trial_expired_html(email))
 
 async def send_trial_reminder_email(email: str) -> bool:
-    """Sent at 8 minutes used (2 minutes remaining)."""
-    return await _send(email, "2 minutes left on your PodPal trial", _trial_reminder_html(email))
+    """Sent when the user has used 2 of their 3 free sessions (1 remaining)."""
+    return await _send(email, "One session left on your PodPal trial", _trial_reminder_html(email))
 
 async def send_waitlist_confirmation(email: str, show: str = "") -> bool:
     return await _send(email, "You're on the PodPal waitlist 🎙", _waitlist_html(email, show))

@@ -598,7 +598,7 @@
 
   <!-- Trial Bar (free tier only) -->
   <div id="trial-bar">
-    <span id="trial-bar-label">10:00 remaining</span>
+    <span id="trial-bar-label">Free Trial</span>
     <div id="trial-bar-track">
       <div id="trial-bar-fill" style="width:100%"></div>
     </div>
@@ -704,7 +704,7 @@
 
     // Trial state
     let trialTickInterval = null;
-    let trialSecondsRemaining = 600;
+    let trialSecondsRemaining = 3600;
     let trialIsActive = false;  // only for free tier
 
     function showSetup() {
@@ -1379,7 +1379,7 @@
     }
 
     function updateTrialBar(secondsRemaining, secondsUsed) {
-      const total = 600;
+      const total = 3600;
       const pct = Math.max(0, Math.min(100, (secondsRemaining / total) * 100));
       const m = Math.floor(secondsRemaining / 60);
       const s = secondsRemaining % 60;
