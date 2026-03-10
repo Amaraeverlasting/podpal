@@ -28,8 +28,8 @@ PAYFAST_URL   = "https://sandbox.payfast.co.za/eng/process" if SANDBOX else "htt
 BASE_URL      = os.getenv("BASE_URL", "https://podpal.show")
 
 PRICES = {
-    "beta": {"amount": "19.00", "name": "PodPal Beta - $19/month"},
-    "pro":  {"amount": "79.00", "name": "PodPal Pro - $79/month"},
+    "beta": {"amount": "349.00", "name": "PodPal Beta - $19/month"},
+    "pro":  {"amount": "1449.00", "name": "PodPal Pro - $79/month"},
 }
 
 
@@ -86,11 +86,6 @@ async def create_checkout(req: CheckoutRequest):
         "m_payment_id":      payment_id,
         "amount":            price["amount"],
         "item_name":         price["name"],
-        "subscription_type": "1",
-        "billing_date":      date.today().strftime("%Y-%m-%d"),
-        "recurring_amount":  price["amount"],
-        "frequency":         "3",
-        "cycles":            "0",
     }
 
     params["signature"] = _generate_signature(params)
