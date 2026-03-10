@@ -13,9 +13,7 @@ RESEND_URL     = "https://api.resend.com/emails"
 
 
 async def _send(to: str, subject: str, html: str) -> bool:
-    """Async wrapper — runs SMTP in thread pool so it doesn't block."""
-    loop = asyncio.get_event_loop()
-        """Send email via Resend API."""
+    """Send email via Resend API."""
     if not RESEND_API_KEY:
         print(f"[email] RESEND_API_KEY not set - skipping email to {to}")
         return False
