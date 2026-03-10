@@ -25,9 +25,87 @@
       color: var(--text);
       height: 100vh;
       display: grid;
-      grid-template-rows: 52px 1fr;
+      grid-template-rows: 52px auto 1fr;
       overflow: hidden;
     }
+
+    /* ── Trial Bar ── */
+    #trial-bar {
+      display: none;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 18px;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    #trial-bar.visible { display: flex; }
+    #trial-bar-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #trial-bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #trial-bar-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 4px;
+      transition: width 1s linear, background 0.5s;
+    }
+    #trial-bar-fill.warning { background: #f0a040; animation: pulse-bar 1.2s infinite; }
+    #trial-bar-fill.danger  { background: var(--red); animation: pulse-bar 0.8s infinite; }
+    @keyframes pulse-bar { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    #trial-upgrade-link {
+      font-size: 11px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    #trial-upgrade-link:hover { text-decoration: underline; }
+
+    /* ── Trial Expired Modal ── */
+    #trial-expired-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+    }
+    #trial-expired-modal.hidden { display: none; }
+    .trial-modal-box {
+      background: var(--surface);
+      border: 1px solid rgba(124,109,240,0.3);
+      border-radius: 16px;
+      padding: 32px;
+      width: 460px;
+      max-width: 95vw;
+      text-align: center;
+    }
+    .trial-modal-icon { font-size: 36px; margin-bottom: 12px; }
+    .trial-modal-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .trial-modal-body { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 24px; }
+    .trial-modal-btns { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+    .trial-modal-upgrade {
+      background: var(--accent); color: white; border: none;
+      border-radius: 8px; padding: 11px 24px; font-size: 14px;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center;
+    }
+    .trial-modal-upgrade:hover { background: #6a5de0; }
+    .trial-modal-later {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 8px; padding: 11px 20px; font-size: 13px;
+      cursor: pointer;
+    }
+    .trial-modal-later:hover { color: var(--text); }
+    .trial-modal-features { font-size: 12px; color: var(--muted2); line-height: 1.6; }
 
     /* ── Header ── */
     header {
@@ -458,6 +536,20 @@
     </div>
   </div>
 
+  <!-- Trial Expired Modal -->
+  <div id="trial-expired-modal" class="hidden">
+    <div class="trial-modal-box">
+      <div class="trial-modal-icon">🎙</div>
+      <div class="trial-modal-title">Your 10-minute trial is complete</div>
+      <div class="trial-modal-body">You've seen what PodPal can do. Ready to keep going?</div>
+      <div class="trial-modal-btns">
+        <a href="/dashboard" class="trial-modal-upgrade">Upgrade to Beta - $19/mo</a>
+        <button class="trial-modal-later" onclick="dismissTrialModal()">Maybe later</button>
+      </div>
+      <div class="trial-modal-features">Beta includes: unlimited sessions, guest intel pre-load, show notes export, question suggester</div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header>
     <div class="logo">Pod<span>Pal</span></div>
@@ -477,6 +569,15 @@
       <button class="btn btn-primary" id="mic-btn" onclick="toggleMic()">🎙 Start Listening</button>
     </div>
   </header>
+
+  <!-- Trial Bar (free tier only) -->
+  <div id="trial-bar">
+    <span id="trial-bar-label">10:00 remaining</span>
+    <div id="trial-bar-track">
+      <div id="trial-bar-fill" style="width:100%"></div>
+    </div>
+    <a href="/dashboard" id="trial-upgrade-link">Upgrade - $19/mo</a>
+  </div>
 
   <!-- Main layout -->
   <main>
@@ -575,6 +676,11 @@
     const USE_DEEPGRAM = DEEPGRAM_API_KEY && DEEPGRAM_API_KEY !== "";
     let recognition = null;
 
+    // Trial state
+    let trialTickInterval = null;
+    let trialSecondsRemaining = 600;
+    let trialIsActive = false;  // only for free tier
+
     function showSetup() {
       document.getElementById('setup-modal').classList.remove('hidden');
     }
@@ -628,6 +734,7 @@
         case 'fact_check':         addFactCheck(msg.claim, msg.result, msg.source); break;
         case 'session_summary':    showSummaryModal(msg); break;
         case 'question_suggestion': showAIQuestion(msg.question); break;
+        case 'trial_expired':      handleTrialExpired(); break;
       }
     }
 
@@ -726,6 +833,7 @@
         isListening = true;
         setStatus('live', 'Live');
         startTimer();
+        startTrialTick();
         document.getElementById('session-timer').style.display = 'inline';
         document.getElementById('mic-btn').textContent = '⏹ Stop';
         document.getElementById('mic-btn').className = 'btn btn-danger';
@@ -771,6 +879,7 @@
           isListening = true;
           setStatus('live', 'Live');
           startTimer();
+          startTrialTick();
           document.getElementById('session-timer').style.display = 'inline';
           document.getElementById('mic-btn').textContent = '⏹ Stop';
           document.getElementById('mic-btn').className = 'btn btn-danger';
@@ -797,6 +906,7 @@
       if (deepgramSocket) { deepgramSocket.close(); deepgramSocket = null; }
       if (volStream) { volStream.getTracks().forEach(t => t.stop()); volStream = null; }
       stopTimer();
+      stopTrialTick();
       stopVolMeter();
       isListening = false;
       document.getElementById('session-timer').style.display = 'none';
@@ -1170,6 +1280,82 @@
       document.getElementById('ai-question-card').style.display = 'none';
     }
 
+    // ── Trial system ──────────────────────────────────────────────
+
+    async function initTrial() {
+      try {
+        const res = await fetch('/api/trial/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.tier === 'free') {
+          trialSecondsRemaining = data.seconds_remaining;
+          trialIsActive = true;
+          updateTrialBar(data.seconds_remaining, data.seconds_used);
+          document.getElementById('trial-bar').classList.add('visible');
+          if (data.expired) {
+            handleTrialExpired();
+          }
+        }
+      } catch(e) { /* non-fatal */ }
+    }
+
+    function updateTrialBar(secondsRemaining, secondsUsed) {
+      const total = 600;
+      const pct = Math.max(0, Math.min(100, (secondsRemaining / total) * 100));
+      const m = Math.floor(secondsRemaining / 60);
+      const s = secondsRemaining % 60;
+      const label = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} remaining`;
+      document.getElementById('trial-bar-label').textContent = label;
+      const fill = document.getElementById('trial-bar-fill');
+      fill.style.width = pct + '%';
+      fill.className = 'trial-bar-fill';
+      if (secondsRemaining <= 60) {
+        fill.classList.add('danger');
+      } else if (secondsRemaining <= 120) {
+        fill.classList.add('warning');
+      }
+    }
+
+    async function trialTick() {
+      if (!trialIsActive || !isListening) return;
+      try {
+        const res = await fetch('/api/trial/tick', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ seconds: 30 }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        trialSecondsRemaining = data.seconds_remaining;
+        updateTrialBar(data.seconds_remaining, data.seconds_used);
+        if (data.expired) {
+          handleTrialExpired();
+        }
+      } catch(e) { /* non-fatal */ }
+    }
+
+    function startTrialTick() {
+      if (!trialIsActive) return;
+      stopTrialTick();
+      trialTickInterval = setInterval(trialTick, 30000);
+    }
+
+    function stopTrialTick() {
+      if (trialTickInterval) { clearInterval(trialTickInterval); trialTickInterval = null; }
+    }
+
+    function handleTrialExpired() {
+      stopListening();
+      stopTrialTick();
+      document.getElementById('trial-expired-modal').classList.remove('hidden');
+      document.getElementById('trial-bar-label').textContent = '00:00 remaining';
+      document.getElementById('trial-bar-fill').style.width = '0%';
+    }
+
+    function dismissTrialModal() {
+      document.getElementById('trial-expired-modal').classList.add('hidden');
+    }
+
     window.onload = () => {
       loadSetup();
       showSetup();
@@ -1179,6 +1365,8 @@
       });
       // Space bar hint in header
       toast('Tip: press Space to start/stop recording');
+      // Load trial status
+      initTrial();
     };
   </script>
 </body>

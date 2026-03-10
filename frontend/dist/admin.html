@@ -190,6 +190,78 @@
       .two-col { grid-template-columns: 1fr; }
       .kpi-grid { grid-template-columns: 1fr 1fr; }
     }
+
+    /* Comp Access section */
+    .comp-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 48px;
+    }
+    .comp-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .comp-field { display: flex; flex-direction: column; gap: 5px; }
+    .comp-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .comp-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .comp-input:focus { border-color: var(--accent); }
+    .comp-email { min-width: 220px; }
+    select.comp-input { min-width: 100px; }
+    .comp-days { width: 80px; }
+    .btn-comp {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-comp:hover { background: #6a5de0; }
+    .comp-result {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--accent2);
+      display: none;
+    }
+    .comp-result.error { color: var(--red); }
+
+    /* Trial Codes section */
+    .code-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .code-form-row {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;
+    }
+    .codes-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .codes-table th {
+      text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .codes-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    .codes-table tr:last-child td { border-bottom: none; }
+    .used-badge { color: var(--muted); font-style: italic; }
+    .unused-badge { color: var(--accent2); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -204,6 +276,65 @@
 
   <div class="main" id="main">
     <div class="loading">Loading analytics...</div>
+  </div>
+
+  <!-- Comp Access + Trial Codes (static, always visible to admin) -->
+  <div class="comp-section">
+
+    <div class="section-title" style="margin-top:32px;">Give Free Access</div>
+    <div class="comp-form">
+      <div class="comp-field">
+        <label class="comp-label">Email</label>
+        <input class="comp-input comp-email" id="comp-email" type="email" placeholder="guest@example.com" />
+      </div>
+      <div class="comp-field">
+        <label class="comp-label">Tier</label>
+        <select class="comp-input" id="comp-tier">
+          <option value="beta">Beta</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+      <div class="comp-field">
+        <label class="comp-label">Days</label>
+        <input class="comp-input comp-days" id="comp-days" type="number" value="30" min="1" max="365" />
+      </div>
+      <button class="btn-comp" onclick="grantComp()">Grant Access</button>
+    </div>
+    <div class="comp-result" id="comp-result"></div>
+
+    <div class="section-title" style="margin-top:32px;">Trial Codes</div>
+    <div class="code-form">
+      <div class="code-form-row">
+        <div class="comp-field">
+          <label class="comp-label">Code</label>
+          <input class="comp-input" id="code-name" type="text" placeholder="e.g. FRIEND2026" style="text-transform:uppercase;" />
+        </div>
+        <div class="comp-field">
+          <label class="comp-label">Tier</label>
+          <select class="comp-input" id="code-tier">
+            <option value="pro">Pro</option>
+            <option value="beta">Beta</option>
+          </select>
+        </div>
+        <div class="comp-field">
+          <label class="comp-label">Days</label>
+          <input class="comp-input comp-days" id="code-days" type="number" value="7" min="1" />
+        </div>
+        <button class="btn-comp" onclick="createCode()">Create Code</button>
+      </div>
+      <div id="codes-result" style="font-size:13px;color:var(--accent2);margin-bottom:12px;display:none;"></div>
+      <table class="codes-table" id="codes-table">
+        <thead>
+          <tr>
+            <th>Code</th><th>Tier</th><th>Days</th><th>Status</th><th>Used By</th><th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="codes-body">
+          <tr><td colspan="6" style="color:var(--muted);font-style:italic;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 
   <script>
@@ -324,7 +455,93 @@
       window.location.href = '/login';
     }
 
+    async function grantComp() {
+      const email = document.getElementById('comp-email').value.trim();
+      const tier  = document.getElementById('comp-tier').value;
+      const days  = parseInt(document.getElementById('comp-days').value, 10);
+      const resultEl = document.getElementById('comp-result');
+      resultEl.style.display = 'none';
+      if (!email) { resultEl.textContent = 'Email required'; resultEl.className = 'comp-result error'; resultEl.style.display = 'block'; return; }
+      try {
+        const res = await fetch('/api/admin/comp-access', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email, tier, days }),
+        });
+        const d = await res.json();
+        if (d.ok) {
+          resultEl.className = 'comp-result';
+          resultEl.textContent = `Done. ${email} has ${tier} access for ${days} days (expires ${d.expires?.split('T')[0]}).`;
+          document.getElementById('comp-email').value = '';
+        } else {
+          resultEl.className = 'comp-result error';
+          resultEl.textContent = d.error || 'Failed';
+        }
+        resultEl.style.display = 'block';
+      } catch(e) {
+        resultEl.textContent = 'Request failed: ' + e.message;
+        resultEl.className = 'comp-result error';
+        resultEl.style.display = 'block';
+      }
+    }
+
+    async function loadCodes() {
+      try {
+        const res = await fetch('/api/admin/trial-codes');
+        if (!res.ok) return;
+        const d = await res.json();
+        const tbody = document.getElementById('codes-body');
+        const codes = d.codes || [];
+        if (!codes.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);font-style:italic;">No codes yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = codes.map(c => `
+          <tr>
+            <td style="font-weight:700;font-family:monospace;">${c.code}</td>
+            <td><span class="badge-tier badge-${c.tier}">${c.tier}</span></td>
+            <td>${c.days}d</td>
+            <td>${c.used ? '<span class="used-badge">used</span>' : '<span class="unused-badge">available</span>'}</td>
+            <td style="color:var(--muted);">${c.used_by || '-'}</td>
+            <td style="color:var(--muted);">${c.created_at ? c.created_at.split('T')[0] : ''}</td>
+          </tr>
+        `).join('');
+      } catch(e) { /* non-fatal */ }
+    }
+
+    async function createCode() {
+      const code = document.getElementById('code-name').value.trim().toUpperCase();
+      const tier = document.getElementById('code-tier').value;
+      const days = parseInt(document.getElementById('code-days').value, 10);
+      const resultEl = document.getElementById('codes-result');
+      if (!code) { resultEl.textContent = 'Code name required'; resultEl.style.color = 'var(--red)'; resultEl.style.display = 'block'; return; }
+      try {
+        const res = await fetch('/api/admin/trial-codes', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ code, tier, days }),
+        });
+        const d = await res.json();
+        if (d.ok) {
+          resultEl.textContent = `Code ${code} created. Share link: ${window.location.origin}/trial?code=${code}`;
+          resultEl.style.color = 'var(--accent2)';
+          resultEl.style.display = 'block';
+          document.getElementById('code-name').value = '';
+          loadCodes();
+        } else {
+          resultEl.textContent = d.error || 'Failed';
+          resultEl.style.color = 'var(--red)';
+          resultEl.style.display = 'block';
+        }
+      } catch(e) {
+        resultEl.textContent = 'Request failed';
+        resultEl.style.color = 'var(--red)';
+        resultEl.style.display = 'block';
+      }
+    }
+
     init();
+    loadCodes();
   </script>
 </body>
 </html>

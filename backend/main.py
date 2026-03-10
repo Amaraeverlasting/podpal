@@ -52,6 +52,17 @@ except Exception as e:
     _email_ok = False
     async def send_waitlist_confirmation(*a, **kw): pass
 
+try:
+    from trial_handler import (
+        get_trial_status, add_trial_time, is_trial_expired,
+        redeem_trial_code, create_trial_code, list_trial_codes, grant_comp_access,
+        TRIAL_LIMIT_SECONDS,
+    )
+    _trial_ok = True
+except Exception as e:
+    print(f"[WARN] Trial handler failed to load: {e}")
+    _trial_ok = False
+
 load_dotenv()
 
 app = FastAPI(title="PodPal", version="0.3.0")
@@ -899,6 +910,165 @@ async def waitlist_count():
     wl_file = BASE_DIR / "data" / "waitlist.json"
     entries = json.loads(wl_file.read_text()) if wl_file.exists() else []
     return {"count": len(entries)}
+
+
+# ── Trial endpoints ──────────────────────────────────────────────────────────
+
+@app.get("/api/trial/status")
+async def trial_status(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+    return get_trial_status(user["email"])
+
+
+@app.post("/api/trial/tick")
+async def trial_tick(payload: dict, request: Request):
+    """Called by frontend every 30 seconds while recording.
+    Adds seconds to trial and broadcasts trial_expired if needed."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+
+    email = user["email"]
+    seconds = min(int(payload.get("seconds", 30)), 60)  # cap at 60 per tick
+    status = add_trial_time(email, seconds)
+
+    # If trial just expired, broadcast to any open WS sessions for this user
+    if status.get("expired") and status.get("tier") == "free":
+        for sess in sessions.values():
+            if getattr(sess, "user_email", None) == email:
+                asyncio.create_task(sess.broadcast({"type": "trial_expired"}))
+
+    # Send trial reminder email at 8 minutes (480s) - only once
+    if _email_ok and status.get("seconds_used", 0) >= 480 and not status.get("expired"):
+        reminder_sent_key = f"trial_reminder_sent_{email}"
+        if not _tick_state.get(reminder_sent_key):
+            _tick_state[reminder_sent_key] = True
+            try:
+                from email_handler import send_trial_reminder_email
+                asyncio.create_task(send_trial_reminder_email(email))
+            except Exception:
+                pass
+
+    # Send trial expired email once
+    if _email_ok and status.get("expired"):
+        expired_sent_key = f"trial_expired_sent_{email}"
+        if not _tick_state.get(expired_sent_key):
+            _tick_state[expired_sent_key] = True
+            try:
+                from email_handler import send_trial_expired_email
+                asyncio.create_task(send_trial_expired_email(email))
+            except Exception:
+                pass
+
+    return status
+
+
+# In-memory state for one-shot email triggers (resets on server restart - fine for our scale)
+_tick_state: dict = {}
+
+
+@app.get("/trial")
+async def redeem_code_page(code: str, request: Request):
+    """Shareable trial link. Validates code, sets user tier, redirects to /welcome."""
+    if not _trial_ok:
+        return HTMLResponse("<h2>Trial system unavailable.</h2>", status_code=503)
+    if not code:
+        return HTMLResponse("<h2>No code provided.</h2>", status_code=400)
+
+    # Require login to redeem (create anonymous session or redirect to login)
+    user = get_current_user(request)
+    if not user:
+        # Store code in redirect URL so they can redeem after login
+        return RedirectResponse(url=f"/login?next=/trial?code={code}", status_code=302)
+
+    email = user["email"]
+    result = redeem_trial_code(code, email)
+    if not result["ok"]:
+        return HTMLResponse(
+            f"<h2>Code error: {result.get('error', 'Unknown error')}</h2>"
+            "<p><a href='/app'>Go to app</a></p>",
+            status_code=400
+        )
+
+    tier = result["tier"]
+    days = result["days"]
+    return RedirectResponse(url=f"/welcome?trial={tier}&days={days}", status_code=302)
+
+
+# ── Admin trial-code endpoints ─────────────────────────────────────────────
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "mic@mannmade.co.za")
+
+
+def _require_admin(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return None, JSONResponse({"error": "Not authenticated"}, status_code=401)
+    if user.get("email", "").lower() != ADMIN_EMAIL.lower():
+        return None, JSONResponse({"error": "Forbidden"}, status_code=403)
+    return user, None
+
+
+@app.get("/api/admin/trial-codes")
+async def admin_list_trial_codes(request: Request):
+    _, err = _require_admin(request)
+    if err:
+        return err
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+    return {"codes": list_trial_codes()}
+
+
+@app.post("/api/admin/trial-codes")
+async def admin_create_trial_code(payload: dict, request: Request):
+    _, err = _require_admin(request)
+    if err:
+        return err
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+    code = (payload.get("code") or "").strip().upper()
+    tier = payload.get("tier", "pro")
+    days = int(payload.get("days", 7))
+    if not code:
+        return JSONResponse({"error": "Code required"}, status_code=400)
+    entry = create_trial_code(code, tier, days)
+    return {"ok": True, "code": code, **entry}
+
+
+@app.post("/api/admin/comp-access")
+async def admin_comp_access(payload: dict, request: Request):
+    _, err = _require_admin(request)
+    if err:
+        return err
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+
+    email = (payload.get("email") or "").strip().lower()
+    tier  = payload.get("tier", "beta")
+    days  = int(payload.get("days", 30))
+
+    if not email or "@" not in email:
+        return JSONResponse({"error": "Valid email required"}, status_code=400)
+    if tier not in ("beta", "pro", "network"):
+        return JSONResponse({"error": "Invalid tier"}, status_code=400)
+
+    result = grant_comp_access(email, tier, days)
+
+    # Send welcome email for the granted tier
+    if _email_ok:
+        try:
+            from email_handler import send_welcome_email
+            asyncio.create_task(send_welcome_email(email, tier))
+        except Exception:
+            pass
+
+    return result
 
 
 @app.get("/health")

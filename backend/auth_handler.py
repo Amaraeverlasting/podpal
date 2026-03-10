@@ -64,14 +64,33 @@ def get_or_create_user(email: str, tier: str = "free") -> dict:
     users = _users()
     if email not in users:
         users[email] = {
-            "email": email,
-            "tier": tier,
-            "created_at": datetime.utcnow().isoformat(),
-            "last_seen": datetime.utcnow().isoformat(),
-            "sessions": [],
+            "email":               email,
+            "tier":                tier,
+            "created_at":          datetime.utcnow().isoformat(),
+            "last_seen":           datetime.utcnow().isoformat(),
+            "sessions":            [],
             "subscription_status": "active" if tier != "free" else "free",
+            "trial_seconds_used":  0,
+            "trial_started_at":    None,
+            "trial_expired":       False,
+            "first_login":         True,
         }
         _write(USERS_FILE, users)
+    else:
+        # Backfill trial fields for existing users
+        changed = False
+        user = users[email]
+        for field, default in [
+            ("trial_seconds_used", 0),
+            ("trial_started_at", None),
+            ("trial_expired", False),
+            ("first_login", False),   # existing users have already logged in
+        ]:
+            if field not in user:
+                user[field] = default
+                changed = True
+        if changed:
+            _write(USERS_FILE, users)
     return users[email]
 
 
@@ -180,18 +199,10 @@ async def request_magic_link(payload: dict):
 
     verify_url = f"{BASE_URL}/api/auth/verify?token={token}"
 
-    # Send via Resend
+    # Send magic link email
     try:
-        from email_handler import _send, _base_layout
-        html = _base_layout(f"""
-          <h1>Your PodPal login link</h1>
-          <p>Click the button below to sign in. This link expires in 15 minutes.</p>
-          <a href="{verify_url}" class="btn">Sign in to PodPal →</a>
-          <p style="margin-top:24px;font-size:13px;color:#555570;">
-            If you didn't request this, ignore this email.
-          </p>
-        """)
-        await _send(email, "Sign in to PodPal", html)
+        from email_handler import send_magic_link_email
+        await send_magic_link_email(email, verify_url)
     except Exception as e:
         print(f"[auth] Email send error: {e}")
 
@@ -217,12 +228,33 @@ async def verify_magic_link(token: str):
 
     # Get user (create if missing)
     user = get_or_create_user(email)
+    is_first = user.get("first_login", False)
+
+    # Clear first_login flag
+    if is_first:
+        users = _users()
+        if email in users:
+            users[email]["first_login"] = False
+            _write(USERS_FILE, users)
+
     update_user_last_seen(email)
+
+    # Trigger welcome email on first login (async, non-blocking)
+    if is_first:
+        import asyncio
+        try:
+            from email_handler import send_welcome_trial_email
+            asyncio.create_task(send_welcome_trial_email(email))
+        except Exception as e:
+            print(f"[auth] Welcome email error: {e}")
 
     # Create session
     session_id = create_session(email, user.get("tier", "free"))
 
-    response = RedirectResponse(url="/dashboard", status_code=302)
+    # Redirect: first-time users go to /welcome, returning users go to /app
+    redirect_url = "/welcome" if is_first else "/app"
+
+    response = RedirectResponse(url=redirect_url, status_code=302)
     response.set_cookie(
         key="podpal_session",
         value=session_id,
@@ -250,6 +282,17 @@ async def auth_logout():
 
 
 # ── Page routes ───────────────────────────────────────────────────────────────
+
+@router.get("/welcome")
+async def serve_welcome(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    welcome_html = FRONTEND_DIR / "welcome.html"
+    if welcome_html.exists():
+        return HTMLResponse(welcome_html.read_text())
+    return RedirectResponse(url="/app", status_code=302)
+
 
 @router.get("/login")
 async def serve_login(request: Request):

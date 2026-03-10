@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodPal - Welcome</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1a1a24;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c6df0;
+      --accent2: #4ecdc4;
+      --text: #e8e8f0;
+      --muted: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 48px;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent2); }
+    .wrap {
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+    }
+    .pro-banner {
+      background: rgba(124,109,240,0.12);
+      border: 1px solid rgba(124,109,240,0.3);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 32px;
+      display: none;
+    }
+    .pro-banner.visible { display: block; }
+    h1 {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+    h1 span { color: var(--accent2); }
+    .tagline {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 40px;
+      text-align: left;
+    }
+    .feature {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .feature-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .feature-text h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .feature-text p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .trial-callout {
+      background: rgba(78,205,196,0.07);
+      border: 1px solid rgba(78,205,196,0.2);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 32px;
+      font-size: 15px;
+      color: var(--accent2);
+      font-weight: 600;
+    }
+    .trial-callout span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 4px;
+    }
+    .ctas {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .btn-primary {
+      flex: 2;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #6a5de0; }
+    .btn-secondary {
+      flex: 1;
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid rgba(78,205,196,0.3);
+      border-radius: 10px;
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover {
+      background: rgba(78,205,196,0.07);
+      border-color: rgba(78,205,196,0.5);
+    }
+    .fine-print {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+      .ctas { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">Pod<span>Pal</span></div>
+
+  <div class="wrap">
+    <!-- Shown only when ?trial=pro or ?trial=beta is in the URL -->
+    <div class="pro-banner" id="pro-banner"></div>
+
+    <h1>You've got <span>10 minutes.</span><br>Make them count.</h1>
+    <p class="tagline">PodPal runs in the background while you record. No extra effort, no switching tabs.</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-text">
+          <h3>Live research, as you talk</h3>
+          <p>PodPal picks up topics from your conversation and surfaces relevant facts and context in real time - right when you need them.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">💬</div>
+        <div class="feature-text">
+          <h3>Follow-up questions on demand</h3>
+          <p>Hit one button and get a sharp, specific question based on what your guest just said. Never lose the thread.</p>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text">
+          <h3>Summary and social posts when you stop</h3>
+          <p>When you end the session, PodPal generates episode highlights, show notes, and three ready-to-post social captions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="trial-callout" id="trial-callout">
+      🎙 Your 10-minute trial begins when you open the app
+      <span>No recording starts until you hit "Start Listening"</span>
+    </div>
+
+    <div class="ctas">
+      <a href="/app" class="btn-primary">Start my trial →</a>
+      <a href="/dashboard" class="btn-secondary" id="upgrade-btn">Upgrade - $19/mo</a>
+    </div>
+
+    <p class="fine-print">No card needed for your trial. Upgrade anytime.</p>
+  </div>
+
+  <script>
+    // Check for trial= param (from trial code redemption)
+    const params = new URLSearchParams(window.location.search);
+    const trialTier = params.get('trial');
+    const trialDays = params.get('days');
+
+    if (trialTier === 'pro' || trialTier === 'beta') {
+      const banner = document.getElementById('pro-banner');
+      const tierLabel = trialTier === 'pro' ? 'Pro' : 'Beta';
+      const days = trialDays || '7';
+      banner.textContent = `You've been given ${days}-day ${tierLabel} access - no card needed`;
+      banner.classList.add('visible');
+
+      // Update trial callout
+      document.getElementById('trial-callout').innerHTML =
+        `🎙 Your ${days}-day ${tierLabel} access is active<span>Full ${tierLabel} features available immediately</span>`;
+
+      // Update upgrade button
+      document.getElementById('upgrade-btn').textContent = 'See all features';
+      document.getElementById('upgrade-btn').href = '/dashboard';
+    }
+  </script>
+</body>
+</html>

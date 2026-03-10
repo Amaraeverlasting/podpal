@@ -101,10 +101,45 @@ def _welcome_html(email: str, tier: str) -> str:
 def _magic_link_html(email: str, link: str) -> str:
     content = f"""
     <div class="badge">Login Link</div>
-    <h1>Your PodPal login link</h1>
-    <p>Click below to sign in to PodPal. This link expires in 15 minutes.</p>
-    <a href="{link}" class="btn">Sign in to PodPal →</a>
-    <p style="margin-top:20px;font-size:13px;color:#555570;">If you didn't request this, ignore this email. Link expires in 15 minutes.</p>"""
+    <h1>Here's your PodPal link</h1>
+    <p>You've got <span class="highlight">10 minutes of free recording</span> waiting for you. Click below to open the app - this link expires in 15 minutes.</p>
+    <a href="{link}" class="btn">Open PodPal →</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">Didn't request this? Ignore it. The link expires in 15 minutes and nothing happens if you don't click.</p>"""
+    return _base_layout(content)
+
+
+def _welcome_trial_html(email: str) -> str:
+    content = """
+    <div class="badge">Welcome</div>
+    <h1>Your 10 minutes start now</h1>
+    <p>PodPal listens while you record. As you talk, it surfaces live research, suggests follow-up questions, and spots fact-check moments - all without you lifting a finger.</p>
+    <p>In your 10-minute trial you get the full thing: real-time research cards, AI-suggested questions, and a session summary with social posts when you stop.</p>
+    <p style="margin-bottom:4px;"><span class="highlight">When you upgrade to Beta ($19/mo) you unlock:</span></p>
+    <p style="margin-top:0;">Unlimited sessions, guest intel pre-load before you go live, show notes export, and the AI question suggester on demand.</p>
+    <a href="https://podpal.show/app" class="btn">Open the app →</a>
+    <p style="margin-top:24px;font-size:13px;color:#555570;">Questions? Just reply - we read every one.</p>"""
+    return _base_layout(content)
+
+
+def _trial_expired_html(email: str) -> str:
+    content = """
+    <div class="badge" style="background:rgba(124,109,240,0.15);color:#7c6df0;border-color:rgba(124,109,240,0.3);">Trial Complete</div>
+    <h1>Your PodPal trial is up</h1>
+    <p>You just saw PodPal work in real time - research surfacing as you talk, questions appearing when you need them, and a summary waiting when you stop.</p>
+    <p>Beta gets you all of that with no time limit, plus guest intel before you go live and show notes ready to publish. It's <span class="highlight">$19/mo</span> and you can cancel anytime.</p>
+    <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta - $19/mo →</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">Not ready yet? No pressure. Your session data is saved. Come back when you are.</p>"""
+    return _base_layout(content)
+
+
+def _trial_reminder_html(email: str) -> str:
+    content = """
+    <div class="badge" style="background:rgba(255,165,0,0.12);color:#f0a040;border-color:rgba(255,165,0,0.3);">2 Minutes Left</div>
+    <h1>2 minutes left on your trial</h1>
+    <p>You're at 8 minutes in. PodPal stops recording at 10 minutes for free accounts.</p>
+    <p>If you want to keep going - now or for any future episode - Beta is <span class="highlight">$19/mo</span> with no recording limits.</p>
+    <a href="https://podpal.show/dashboard" class="btn">Upgrade to Beta →</a>
+    <p style="margin-top:20px;font-size:13px;color:#555570;">Already done? Your summary and social posts are generating now.</p>"""
     return _base_layout(content)
 
 
@@ -134,7 +169,19 @@ async def send_welcome_email(email: str, tier: str) -> bool:
     return await _send(email, f"You're in - PodPal {tier.title()} is active", _welcome_html(email, tier))
 
 async def send_magic_link_email(email: str, link: str) -> bool:
-    return await _send(email, "Your PodPal login link", _magic_link_html(email, link))
+    return await _send(email, "Here's your PodPal link", _magic_link_html(email, link))
+
+async def send_welcome_trial_email(email: str) -> bool:
+    """Sent on first login - not on magic link request."""
+    return await _send(email, "Welcome to PodPal - your 10 minutes start now", _welcome_trial_html(email))
+
+async def send_trial_expired_email(email: str) -> bool:
+    """Sent when the 10-minute trial runs out."""
+    return await _send(email, "Your PodPal trial is up", _trial_expired_html(email))
+
+async def send_trial_reminder_email(email: str) -> bool:
+    """Sent at 8 minutes used (2 minutes remaining)."""
+    return await _send(email, "2 minutes left on your PodPal trial", _trial_reminder_html(email))
 
 async def send_waitlist_confirmation(email: str, show: str = "") -> bool:
     return await _send(email, "You're on the PodPal waitlist 🎙", _waitlist_html(email, show))
