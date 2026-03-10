@@ -45,12 +45,16 @@ def _save_subs(data: dict):
 
 
 def _generate_signature(params: dict) -> str:
-    """MD5 signature: sorted params + passphrase."""
-    ordered = {k: v for k, v in sorted(params.items()) if v != ""}
-    query = urllib.parse.urlencode(ordered)
+    """MD5 signature per PayFast spec - no sorting, no empty values, passphrase appended."""
+    pairs = []
+    for k, v in params.items():
+        if v != "" and k != "signature":
+            # PayFast uses quote_plus encoding (spaces → +)
+            pairs.append(f"{k}={urllib.parse.quote_plus(str(v))}")
+    query = "&".join(pairs)
     if PASSPHRASE:
-        query += f"&passphrase={urllib.parse.quote(PASSPHRASE)}"
-    return hashlib.md5(query.encode()).hexdigest()
+        query += f"&passphrase={urllib.parse.quote_plus(PASSPHRASE)}"
+    return hashlib.md5(query.encode("utf-8")).hexdigest()
 
 
 class CheckoutRequest(BaseModel):
@@ -94,7 +98,28 @@ async def create_checkout(req: CheckoutRequest):
     }
 
     params["signature"] = _generate_signature(params)
-    return {"redirect": f"{PAYFAST_URL}?{urllib.parse.urlencode(params)}"}
+
+    # Build auto-submitting HTML form (PayFast recommended approach)
+    fields = "\n".join(
+        f'<input type="hidden" name="{k}" value="{v}">'
+        for k, v in params.items()
+    )
+    html = f"""<!DOCTYPE html>
+<html>
+<head><title>Redirecting to PayFast...</title>
+<style>body{{background:#0a0a0f;color:#e8e8f2;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}}.box{{text-align:center;}}.spinner{{width:40px;height:40px;border:3px solid #333;border-top-color:#7c6df0;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}}@keyframes spin{{to{{transform:rotate(360deg)}}}}</style>
+</head>
+<body>
+<div class="box">
+  <div class="spinner"></div>
+  <p>Redirecting to secure payment...</p>
+  <form id="pf" action="{PAYFAST_URL}" method="post">{fields}</form>
+</div>
+<script>document.getElementById('pf').submit();</script>
+</body>
+</html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
 
 
 @router.post("/api/webhook/payfast")

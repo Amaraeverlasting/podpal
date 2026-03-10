@@ -928,10 +928,16 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ tier, email, name })
         });
-        const data = await res.json();
-        if (data.redirect) {
-          window.location.href = data.redirect;
-        } else { throw new Error('No redirect'); }
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) {
+          // Auto-submit form response - open in same window
+          const html = await res.text();
+          document.open(); document.write(html); document.close();
+        } else {
+          const data = await res.json();
+          if (data.redirect) { window.location.href = data.redirect; }
+          else { throw new Error('No redirect'); }
+        }
       } catch(e) {
         btn.textContent = 'Complete Purchase'; btn.disabled = false;
         errEl.textContent = 'Something went wrong. Please try again or email hello@podpal.show';
