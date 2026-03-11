@@ -866,7 +866,9 @@
         setStatus('live', 'Live');
         startTimer();
         startTrialTick();
-        document.getElementById('session-timer').style.display = 'inline';
+        const timerEl = document.getElementById('session-timer');
+        timerEl.style.display = 'inline';
+        timerEl.style.color = 'var(--green)';
         document.getElementById('mic-btn').textContent = '⏹ Stop';
         document.getElementById('mic-btn').className = 'btn btn-danger';
         toast('Listening — speak naturally');
@@ -912,7 +914,9 @@
           setStatus('live', 'Live');
           startTimer();
           startTrialTick();
-          document.getElementById('session-timer').style.display = 'inline';
+          const timerEl2 = document.getElementById('session-timer');
+          timerEl2.style.display = 'inline';
+          timerEl2.style.color = 'var(--green)';
           document.getElementById('mic-btn').textContent = '⏹ Stop';
           document.getElementById('mic-btn').className = 'btn btn-danger';
         };
@@ -941,7 +945,9 @@
       stopTrialTick();
       stopVolMeter();
       isListening = false;
-      document.getElementById('session-timer').style.display = 'none';
+      const timerStop = document.getElementById('session-timer');
+      timerStop.style.display = 'none';
+      timerStop.style.color = 'var(--muted)';
       setStatus('connected', 'Connected');
       document.getElementById('mic-btn').textContent = '🎙 Start Listening';
       document.getElementById('mic-btn').className = 'btn btn-primary';

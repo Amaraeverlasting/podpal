@@ -17,7 +17,7 @@ from typing import Optional
 import anthropic
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -963,6 +963,28 @@ async def trial_status(request: Request):
     if not _trial_ok:
         return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
     return get_trial_status(user["email"])
+
+
+@app.post("/api/trial/redeem")
+async def api_trial_redeem(payload: dict, request: Request):
+    """Redeem a trial code via JSON POST. Called by welcome.html."""
+    if not _trial_ok:
+        return JSONResponse({"error": "Trial system unavailable"}, status_code=503)
+    code = (payload.get("code") or "").strip()
+    if not code:
+        return JSONResponse({"error": "No code provided"}, status_code=400)
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Not authenticated — please log in first"}, status_code=401)
+    result = redeem_trial_code(code, user["email"])
+    if not result.get("ok"):
+        return JSONResponse({"success": False, "error": result.get("error", "Invalid or expired code")}, status_code=400)
+    return JSONResponse({
+        "success": True,
+        "tier": result.get("tier"),
+        "days": result.get("days"),
+        "expires": result.get("expires"),
+    })
 
 
 @app.post("/api/trial/tick")
