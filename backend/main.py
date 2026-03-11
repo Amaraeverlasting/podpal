@@ -747,6 +747,28 @@ async def get_session_file(filename: str):
     return json.loads(fpath.read_text())
 
 
+@app.get("/api/session/{session_id}")
+async def get_session_detail(session_id: str, request: Request):
+    """Return full session JSON for the session viewer page (auth required)."""
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    files = list(SESSIONS_DIR.glob("*.json"))
+    for f in files:
+        try:
+            data = json.loads(f.read_text())
+            if data.get("session_id") == session_id:
+                if data.get("user_email") and data.get("user_email") != user.get("email"):
+                    raise HTTPException(status_code=403, detail="Access denied")
+                return data
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+    raise HTTPException(status_code=404, detail="Session not found")
+
+
 @app.get("/api/session-file/{session_id}/export")
 async def export_session_file(session_id: str):
     """Export a saved session (by session_id) as show notes markdown."""
@@ -1108,6 +1130,15 @@ landing_dir = BASE_DIR / "landing"
 async def serve_app():
     app_html = frontend_dir / "index.html"
     return HTMLResponse(content=app_html.read_text())
+
+
+@app.get("/session")
+@app.get("/session/")
+async def serve_session_page():
+    sess_html = frontend_dir / "session.html"
+    if sess_html.exists():
+        return HTMLResponse(content=sess_html.read_text())
+    return HTMLResponse("<h1>Session page not found</h1>", status_code=404)
 
 
 @app.get("/history")

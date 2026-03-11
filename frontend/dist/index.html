@@ -351,6 +351,11 @@
     /* ── Point item border transition for copy flash ── */
     .point-item { border-bottom: 1px solid var(--border) !important; transition: opacity 0.15s, border-bottom-color 0.1s; }
 
+    /* ── Talking point done state ── */
+    .point-item.done .point-text { text-decoration: line-through; opacity: 0.4; }
+    .point-item.done .point-num { opacity: 0.3; }
+    .point-item.done::before { content: "✓ "; color: var(--green); font-size: 11px; font-weight: 700; }
+
     /* ── Guest Intel Card ── */
     #guest-intel-card {
       background: var(--surface2);
@@ -787,12 +792,13 @@
           // Preserve guest intel card across re-renders
           const guestCard = document.getElementById('guest-intel-card');
           const guestCardHTML = guestCard ? guestCard.outerHTML : '';
-          body.innerHTML = guestCardHTML + qs.map((q, i) =>
-            `<div class="point-item" data-point="${q.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}" onclick="copyTalkingPoint(this)">
+          body.innerHTML = guestCardHTML + qs.map((q, i) => {
+            const isDone = _donePoints.has(String(i));
+            return `<div class="point-item${isDone ? ' done' : ''}" data-idx="${i}" data-point="${q.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}" onclick="copyTalkingPoint(this, event)" title="Click to mark done - Shift+click to copy">
               <span class="point-num">${i + 1}</span>
               <span class="point-text">${q}</span><span class="copy-hint" style="opacity:0.3;font-size:10px;margin-left:6px;">⎘</span>
-            </div>`
-          ).join('');
+            </div>`;
+          }).join('');
           body.classList.add('flash');
           setTimeout(() => body.classList.remove('flash'), 800);
         }
@@ -1138,15 +1144,30 @@
       if (meter) meter.querySelectorAll('.vol-bar').forEach(b => b.style.height = '4px');
     }
 
-    // ── Talking Point Click-to-Copy ───────────────────────────────
-    function copyTalkingPoint(el) {
-      const text = el.dataset.point;
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(() => {
-        el.style.borderBottomColor = 'var(--green)';
-        setTimeout(() => el.style.borderBottomColor = '', 600);
-        toast('Copied to clipboard');
-      }).catch(() => toast('Copy failed'));
+    // ── Talking Point: click toggles done state; shift+click copies ─
+    const _donePoints = new Set();
+
+    function copyTalkingPoint(el, event) {
+      // Shift+click = copy to clipboard
+      if (event && event.shiftKey) {
+        const text = el.dataset.point;
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+          el.style.borderBottomColor = 'var(--green)';
+          setTimeout(() => el.style.borderBottomColor = '', 600);
+          toast('Copied to clipboard');
+        }).catch(() => toast('Copy failed'));
+        return;
+      }
+      // Normal click = toggle done
+      const idx = el.dataset.idx;
+      if (el.classList.contains('done')) {
+        el.classList.remove('done');
+        if (idx !== undefined) _donePoints.delete(idx);
+      } else {
+        el.classList.add('done');
+        if (idx !== undefined) _donePoints.add(idx);
+      }
     }
 
     // ── Guest Intel Toggle ────────────────────────────────────────

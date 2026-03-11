@@ -201,7 +201,7 @@
                 <div class="session-guest">${s.guest || 'Unknown guest'}</div>
                 <div class="session-meta-row">${s.date || ''} &middot; ${fmtDur(s.duration_seconds || 0)}</div>
               </div>
-              <a href="/api/session-file/${s.session_id}/export" class="btn-view">View notes</a>
+              <a href="/session?id=${s.session_id}" class="btn-view">View session</a>
             </div>`).join('')
         : '<div class="empty">No recordings yet. <a href="/app" style="color:var(--accent)">Start your first session</a></div>';
 
