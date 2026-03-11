@@ -82,6 +82,41 @@ if _auth_ok:
 if _profile_ok:
     app.include_router(profile_router)
 
+# ── Prometheus metrics ────────────────────────────────────────────────────────
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    from prometheus_client import Counter, Gauge
+
+    # Auto-instrument HTTP metrics (request count, duration, status codes)
+    Instrumentator().instrument(app).expose(app)
+
+    # Custom PodPal metrics
+    active_sessions = Gauge(
+        'podpal_active_sessions',
+        'Number of active recording sessions'
+    )
+    total_transcriptions = Counter(
+        'podpal_transcriptions_total',
+        'Total transcription segments processed'
+    )
+    websocket_connections = Gauge(
+        'podpal_websocket_connections',
+        'Active WebSocket connections'
+    )
+    _metrics_ok = True
+    print("[INFO] Prometheus metrics enabled on /metrics")
+except Exception as _metrics_err:
+    print(f"[WARN] Prometheus metrics not available: {_metrics_err}")
+    _metrics_ok = False
+    # Stub no-ops so the rest of the code doesn't break
+    class _Noop:
+        def inc(self): pass
+        def dec(self): pass
+        def labels(self, **kw): return self
+    active_sessions = _Noop()
+    total_transcriptions = _Noop()
+    websocket_connections = _Noop()
+
 # ── Page-view middleware ──────────────────────────────────────────────────────
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -335,6 +370,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     session = sessions[session_id]
     session.clients.append(websocket)
+    websocket_connections.inc()
     await websocket.send_json({"type": "connected", "session_id": session_id})
 
     try:
@@ -346,6 +382,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 words = data.get("words", [])
                 text = data.get("text", "")
                 session.add_transcript(words)
+                total_transcriptions.inc()
 
                 await session.broadcast({
                     "type": "transcript_update",
@@ -381,6 +418,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         if websocket in session.clients:
             session.clients.remove(websocket)
+        websocket_connections.dec()
 
 
 async def run_intelligence(session: PodSession, recent_text: str):
@@ -558,6 +596,7 @@ async def create_session(payload: dict, request: Request):
     session_id   = f"session_{int(time.time())}"
     host_profile = payload.get("host_profile", {})
     sessions[session_id] = PodSession(session_id, host_profile)
+    active_sessions.inc()
 
     # Associate with logged-in user
     user       = get_current_user(request)
@@ -1256,6 +1295,67 @@ async def admin_comp_access(payload: dict, request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "0.2.0"}
+
+
+@app.get("/status")
+async def status():
+    """Real-time PodPal health and metrics - no external services needed."""
+    import psutil, time as _time
+
+    # Sessions
+    active = [s for s in _sessions.values() if getattr(s, "recording", False)]
+    all_sessions = list(_sessions.values())
+
+    # Users
+    users_data = json.loads(USERS_FILE.read_text()) if USERS_FILE.exists() else {}
+    total_users = len(users_data)
+    trial_users = sum(1 for u in users_data.values() if u.get("tier") == "trial")
+    paid_users = sum(1 for u in users_data.values() if u.get("tier") in ("beta", "pro"))
+
+    # Recent errors from log
+    errors_today = []
+    log_path = BASE_DIR / "data" / "podpal_errors.log"
+    if log_path.exists():
+        lines = log_path.read_text().splitlines()[-50:]
+        errors_today = [l for l in lines if "ERROR" in l]
+
+    # System
+    cpu = psutil.cpu_percent(interval=0.5)
+    mem = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
+
+    # Uptime
+    boot_time = psutil.boot_time()
+    uptime_hours = (_time.time() - boot_time) / 3600
+
+    return {
+        "status": "ok",
+        "version": "0.2.0",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "podpal": {
+            "active_sessions": len(active),
+            "total_sessions_loaded": len(all_sessions),
+            "websocket_connections": len(_sessions),
+        },
+        "users": {
+            "total": total_users,
+            "trial": trial_users,
+            "paid": paid_users,
+        },
+        "errors": {
+            "recent_count": len(errors_today),
+            "last_error": errors_today[-1] if errors_today else None,
+        },
+        "system": {
+            "cpu_percent": cpu,
+            "memory_used_gb": round(mem.used / 1024**3, 2),
+            "memory_total_gb": round(mem.total / 1024**3, 2),
+            "memory_percent": mem.percent,
+            "disk_used_gb": round(disk.used / 1024**3, 2),
+            "disk_free_gb": round(disk.free / 1024**3, 2),
+            "uptime_hours": round(uptime_hours, 1),
+        },
+    }
 
 
 # ── Static serving ───────────────────────────────────────────────────────────
