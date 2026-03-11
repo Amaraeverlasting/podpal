@@ -1,0 +1,120 @@
+{
+  "name": "Cathy Hackl",
+  "title": "Chief Metaverse Officer / Futurist / Tech CEO",
+  "known_as": "Godmother of the Metaverse",
+  "bio": "Cathy Hackl is a leading tech futurist and business strategist specializing in spatial computing, the metaverse, AI, and immersive technologies. She serves as CEO of Journey and has advised major global brands on their Web3, AR/VR, and metaverse strategies. A prolific speaker, author, and thought leader, she has been named one of the most influential voices in tech by Fast Company, Forbes, and Time.",
+  "topics": [
+    "Spatial computing",
+    "Metaverse and immersive worlds",
+    "Augmented reality (AR) and virtual reality (VR)",
+    "Artificial intelligence and its intersection with spatial computing",
+    "Web3 and digital ownership",
+    "Brand strategy in virtual worlds",
+    "Digital identity and avatars",
+    "The future of work and collaboration",
+    "Gaming as cultural and economic infrastructure",
+    "Emerging markets and digital leapfrogging"
+  ],
+  "books": [
+    {
+      "title": "Navigating the Metaverse: A Guide to Limitless Possibilities in a Web 3.0 World",
+      "co_author": "Josh Hackl",
+      "year": 2022,
+      "description": "A practical business guide to understanding and building strategy in the metaverse, covering virtual economies, digital assets, NFTs, and brand presence in virtual worlds."
+    },
+    {
+      "title": "The Spatial Web: How Web 3.0 Will Connect Humans, Machines, and AI to Transform the World",
+      "co_authors": [
+        "Gabriel Ren\u00e9",
+        "Dan Mapes"
+      ],
+      "year": 2019,
+      "description": "Explores how the convergence of AI, blockchain, and immersive tech will reshape the internet into a spatially aware, decentralized network overlaid on the physical world."
+    }
+  ],
+  "key_beliefs": [
+    "The metaverse is not one platform \u2014 it is an evolution of the internet into spatial, persistent, and immersive experiences.",
+    "Spatial computing will be as transformative as the mobile revolution \u2014 brands and businesses that ignore it now will be left behind.",
+    "Digital identity and ownership are fundamental rights in virtual worlds; avatar economies are real economies.",
+    "The next frontier is not just virtual \u2014 it is the blending of physical and digital realities through AR glasses and spatial OS.",
+    "AI is the engine that makes the metaverse truly intelligent and responsive \u2014 they are inseparable.",
+    "Gaming is not entertainment \u2014 it is infrastructure. It is where the next generation already lives.",
+    "Emerging markets, particularly in Africa and Latin America, have a unique opportunity to leapfrog legacy infrastructure and adopt spatial computing natively.",
+    "Companies should think about their metaverse strategy the same way they thought about their website strategy in 1995.",
+    "Virtual worlds are not escapism \u2014 they are an extension of real human connection, commerce, and culture.",
+    "The question is not IF the metaverse will happen \u2014 it is whether your brand will have a presence when it does."
+  ],
+  "companies_advised_or_worked_with": [
+    "Amazon Web Services (AWS) \u2014 former Head of Immersive Tech Evangelism",
+    "HTC Vive \u2014 former Chief Communications Officer",
+    "Magic Leap",
+    "Walmart",
+    "Procter & Gamble",
+    "Warner Bros",
+    "Gucci",
+    "Nike",
+    "Microsoft",
+    "Journey (her own venture \u2014 CEO)",
+    "Genvid Technologies (advisory)"
+  ],
+  "recent_positions": [
+    {
+      "role": "CEO",
+      "company": "Journey",
+      "description": "Leads a tech and strategy firm focused on helping enterprises navigate spatial computing, AI, and metaverse strategy."
+    },
+    {
+      "role": "Board Member / Advisor",
+      "company": "Multiple Web3 and XR startups",
+      "description": "Active advisor to emerging companies in immersive tech, digital identity, and virtual economies."
+    }
+  ],
+  "africa_emerging_markets_angle": "Cathy has spoken about developing markets as potentially the most interesting adopters of spatial computing, citing that Africa and Southeast Asia can skip legacy physical infrastructure and adopt immersive, AI-powered digital-first platforms natively. She has noted that virtual economies are particularly powerful where physical economic barriers are high \u2014 a person in Lagos or Johannesburg can build, trade, and earn in a virtual world with zero geographic friction.",
+  "suggested_questions": [
+    "You've positioned AI agents as the next interface layer\u2014but given their black-box nature, how do brands navigate the trust deficit when an AI agent is making decisions on behalf of their customers in spatial environments?",
+    "In your work across African tech ecosystems, what spatial computing applications are being built there that Western tech media completely ignores, and why does that gap matter?",
+    "The metaverse failed to materialize as predicted, yet spatial computing is advancing rapidly. What specifically did the metaverse narrative get wrong about human behavior in virtual spaces?",
+    "If digital identity becomes truly persistent across spatial computing platforms, what's the realistic path to preventing identity monopolies by a handful of tech giants?",
+    "You've advised Fortune 500 companies on metaverse strategy\u2014what percentage of those strategies actually survived internal pivots, and what did the survivors have in common?",
+    "AI agents operating autonomously in virtual worlds raises questions about liability and authenticity. Should there be regulatory frameworks distinguishing between agent-generated versus human-generated interactions?",
+    "How does the spatial computing paradigm shift change what 'brand authenticity' even means when customers can't distinguish between human representatives and sophisticated AI agents?",
+    "Given XR hardware fragmentation, do you think spatial computing succeeds through one dominant platform or through interoperable standards\u2014and which outcome is actually better for creators?",
+    "You've written about digital identity\u2014but most blockchain-based identity solutions have failed adoption. What's the psychological or UX barrier that technical solutions keep missing?",
+    "In African markets specifically, what's the killer app for spatial computing that doesn't require expensive headsets and assumes intermittent connectivity?",
+    "When you advise brands on virtual world strategy now versus 2021, what's fundamentally different about how you frame ROI and success metrics?",
+    "AI agents could optimize human behavior in spatial environments in ways that feel increasingly manipulative\u2014where's your line on what's acceptable brand use of agent-driven behavioral design?",
+    "If spatial computing becomes ubiquitous, do you expect digital identity to eventually carry more weight in determining access and opportunity than physical identity?",
+    "What's a spatial computing use case you're genuinely excited about that has nothing to do with commerce, gaming, or entertainment?",
+    "The gap between hype and reality in emerging tech keeps widening\u2014what would need to happen for you to publicly walk back any major predictions you've made about spatial computing adoption timelines?"
+  ],
+  "key_stats": [
+    "The metaverse economy is projected to reach $800 billion to $5 trillion by 2030, depending on the analyst.",
+    "Over 3 billion people play video games globally \u2014 gaming is the primary on-ramp to virtual worlds.",
+    "Roblox has 65+ million daily active users, the majority under 17 \u2014 the next generation of consumers already lives in virtual worlds.",
+    "Apple Vision Pro launched at $3,499 \u2014 Cathy cites this as proof that spatial computing is now a consumer product category, not a research project.",
+    "Fortnite and Roblox together generate more revenue than most Hollywood studios.",
+    "Nike made over $185 million in NFT/metaverse-related revenue within a year of launching .SWOOSH.",
+    "GenZ spends more time in gaming environments than watching TV."
+  ],
+  "talking_points": [
+    "The term 'metaverse' is a container \u2014 it holds AR, VR, spatial computing, persistent virtual worlds, and AI. The hype died; the technology didn't.",
+    "Apple Vision Pro is the iPhone moment for spatial computing \u2014 it defines the category even if the first version is expensive and niche.",
+    "Virtual economies are real economies. Roblox developers earn real money. This is not a metaphor.",
+    "The brands that built early websites in 1995 dominated search for a decade. The same window is open right now for spatial computing.",
+    "Africa has a chance to write the rules of virtual identity and ownership from scratch \u2014 without the legacy assumptions of Western internet infrastructure.",
+    "AI and the metaverse are not separate trends \u2014 AI is what makes virtual worlds responsive, intelligent, and personalized at scale.",
+    "The future is not VR headsets exclusively \u2014 it is AI glasses, ambient computing, and the blending of digital layers onto physical reality.",
+    "Digital fashion, virtual real estate, and avatar economies are not gimmicks \u2014 they are early signals of how value will be created in immersive worlds."
+  ],
+  "controversies_tensions": [
+    "Meta's $10B+ metaverse losses and Horizon Worlds underperformance made her a target for critics who said metaverse hype was overblown \u2014 she pivoted her language to 'spatial computing' and 'immersive tech' without fully walking back her earlier bold predictions.",
+    "The NFT/Web3 crash of 2022 hit many of the brands she advised hard \u2014 the tension between genuine long-term vision and short-term hype cycles is a live question.",
+    "Some critics argue she is better at marketing tech ideas to corporates than at technical depth \u2014 the 'evangelist vs engineer' tension in her positioning.",
+    "Her work with luxury brands (Gucci, Nike, etc.) on virtual fashion and NFTs raises questions about who actually benefits in virtual economies \u2014 is it the brands or the communities?",
+    "The 'Godmother of the Metaverse' label was self-applied early on \u2014 her proximity to Meta's narrative has made some in the spatial computing world skeptical of her independence."
+  ],
+  "twitter": "@cathyhackl",
+  "linkedin": "linkedin.com/in/cathyhackl",
+  "website": "cathyhackl.com",
+  "cached_at": 0
+}

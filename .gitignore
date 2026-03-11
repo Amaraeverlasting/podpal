@@ -1,5 +1,4 @@
 .env
 data/sessions/
-data/guests/
 *.pdf
 browser-sessions/
