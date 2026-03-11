@@ -126,6 +126,7 @@ claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 BASE_DIR = Path(__file__).parent.parent
 SESSIONS_DIR = BASE_DIR / "data" / "sessions"
 GUESTS_DIR = BASE_DIR / "data" / "guests"
+DATA_DIR = BASE_DIR / "data"
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 GUESTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -361,7 +362,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     asyncio.create_task(run_intelligence(session, recent_text))
 
             elif event_type == "stop_session":
-                asyncio.create_task(generate_session_summary(session))
+                questions_asked = data.get("questions_asked", [])
+                questions_unasked = data.get("questions_unasked", [])
+                asyncio.create_task(generate_session_summary(session, questions_asked, questions_unasked))
 
             elif event_type == "suggest_question":
                 context = data.get("context", "")
@@ -435,7 +438,7 @@ async def run_intelligence(session: PodSession, recent_text: str):
         print(f"Intelligence error: {e}")
 
 
-async def generate_session_summary(session: PodSession):
+async def generate_session_summary(session: PodSession, questions_asked: list = None, questions_unasked: list = None):
     """Generate a post-session summary: bullets, social posts, show notes."""
     transcript_text = " ".join([w.get("word", "") for w in session.full_transcript])
     if not transcript_text.strip():
@@ -450,10 +453,17 @@ async def generate_session_summary(session: PodSession):
     guest = session.host_profile.get("guest", "the guest")
     show = session.host_profile.get("show", "the podcast")
 
+    questions_ctx = ""
+    if questions_asked:
+        questions_ctx += "\nQuestions asked during the interview:\n" + "\n".join(f"- {q}" for q in questions_asked[:12])
+    if questions_unasked:
+        questions_ctx += "\nQuestions not covered (could fuel a follow-up episode):\n" + "\n".join(f"- {q}" for q in questions_unasked[:5])
+
     prompt = f"""You are a podcast production assistant for "{show}". Analyse this transcript and produce a post-session package.
 
 Transcript:
 {transcript_text[:5000]}
+{questions_ctx}
 
 Return JSON only — no markdown, no extra text:
 {{
@@ -919,6 +929,97 @@ Return JSON only:
     except Exception as e:
         print(f"Guest intel error: {e}")
         return {"error": str(e)}
+
+
+# ── Questions endpoints ──────────────────────────────────────────────────────
+
+@app.post("/api/questions/generate")
+async def generate_questions(request: Request):
+    """Generate AI interview questions for a guest. Requires ANTHROPIC_API_KEY."""
+    body = await request.json()
+    guest_name = body.get("guest_name", "")
+    topic = body.get("topic", "")
+    guest_profile = body.get("guest_profile", {})
+    num_questions = body.get("num_questions", 12)
+
+    if not _is_valid_key(ANTHROPIC_API_KEY):
+        return JSONResponse({"error": "AI generation requires API key — set ANTHROPIC_API_KEY on the server"}, status_code=503)
+
+    profile_summary = ""
+    if guest_profile:
+        bio = guest_profile.get("background", guest_profile.get("bio", ""))
+        recent = guest_profile.get("recent_work", guest_profile.get("key_works", []))
+        topics = guest_profile.get("topics", [])
+        quotes = guest_profile.get("quotes", guest_profile.get("key_beliefs", []))
+        profile_summary = f"""
+Guest background: {bio}
+Recent work: {', '.join(recent[:3]) if recent else ''}
+Key topics: {', '.join(topics[:5]) if topics else ''}
+Notable positions: {', '.join(quotes[:2]) if quotes else ''}
+"""
+
+    prompt = f"""Generate {num_questions} sharp interview questions for a podcast interview.
+
+Guest: {guest_name}
+Topic/focus: {topic or 'their area of expertise'}
+{profile_summary}
+
+Requirements:
+- Questions must be specific, not generic. "What advice would you give?" is banned.
+- Mix of: opening warmup (1-2), deep expertise (4-5), contrarian/challenging (2-3), future/vision (2-3), personal (1-2)
+- Each question should invite a story or specific example, not a yes/no
+- No em dashes anywhere
+- Label each with its type in brackets: [warmup] [expertise] [challenge] [vision] [personal]
+
+Return as a JSON array of objects:
+[
+  {{"id": "q1", "question": "...", "type": "warmup", "theme": "background"}},
+  ...
+]
+
+Return ONLY the JSON array, no other text."""
+
+    try:
+        message = await claude.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = message.content[0].text.strip()
+        try:
+            questions = json.loads(raw)
+        except Exception:
+            start = raw.find('[')
+            end = raw.rfind(']') + 1
+            questions = json.loads(raw[start:end])
+        return {"questions": questions, "guest": guest_name, "topic": topic}
+    except Exception as e:
+        print(f"Generate questions error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/guests")
+async def list_guests():
+    """List all saved guest profiles."""
+    if not GUESTS_DIR.exists():
+        return []
+    guests = []
+    for f in GUESTS_DIR.glob("*.json"):
+        try:
+            data = json.loads(f.read_text())
+            guests.append({"slug": f.stem, "name": data.get("name", f.stem), "title": data.get("title", "")})
+        except Exception:
+            pass
+    return guests
+
+
+@app.get("/api/guests/{guest_slug}")
+async def get_guest(guest_slug: str):
+    """Return a cached guest profile by slug."""
+    guest_file = GUESTS_DIR / f"{guest_slug}.json"
+    if not guest_file.exists():
+        raise HTTPException(status_code=404, detail="Guest not found")
+    return json.loads(guest_file.read_text())
 
 
 # ── Misc endpoints ───────────────────────────────────────────────────────────

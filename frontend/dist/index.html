@@ -477,6 +477,52 @@
     .clip-ts { color: var(--accent2); font-variant-numeric: tabular-nums; flex-shrink: 0; font-weight: 600; font-size: 10px; }
     .clip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font-size: 11px; }
 
+    /* ── Questions Tab System ── */
+    .tab-nav { display:flex; gap:4px; width:100%; margin-bottom:6px; }
+    .tab-btn {
+      flex:1; background:transparent; border:1px solid var(--border); border-radius:5px;
+      color:var(--muted); font-size:10px; font-weight:700; padding:5px 6px;
+      cursor:pointer; transition:all 0.15s; text-align:center; letter-spacing:0.3px;
+      display:flex; align-items:center; justify-content:center; gap:4px;
+    }
+    .tab-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.15); }
+    .tab-btn.active { background:rgba(124,109,240,0.12); border-color:rgba(124,109,240,0.3); color:var(--accent); }
+
+    /* ── Question items ── */
+    .q-item {
+      display:flex; align-items:flex-start; gap:7px;
+      padding:8px 4px 8px 6px; border-bottom:1px solid var(--border);
+      border-left:2px solid transparent; cursor:pointer; transition:opacity 0.15s;
+    }
+    .q-item:last-child { border-bottom:none; }
+    .q-item.q-active { border-left-color:var(--accent); background:rgba(124,109,240,0.06); }
+    .q-item.q-asked { opacity:0.35; }
+    .q-item.q-asked .q-text { text-decoration:line-through; }
+    .q-drag-handle { color:var(--muted2); font-size:10px; cursor:grab; padding-top:2px; flex-shrink:0; user-select:none; }
+    .q-type-badge {
+      font-size:9px; font-weight:700; padding:2px 5px; border-radius:3px;
+      text-transform:uppercase; letter-spacing:0.3px; flex-shrink:0; margin-top:2px; white-space:nowrap;
+    }
+    .type-warmup    { background:rgba(160,160,160,0.12); color:#999; }
+    .type-expertise { background:rgba(139,92,246,0.15);  color:#a78bfa; }
+    .type-challenge { background:rgba(251,146,60,0.15);  color:#fb923c; }
+    .type-vision    { background:rgba(59,130,246,0.15);  color:#60a5fa; }
+    .type-personal  { background:rgba(74,222,128,0.15);  color:#4ade80; }
+    .q-text { flex:1; font-size:12px; line-height:1.45; color:var(--text); min-width:0; }
+    .q-delete {
+      background:none; border:none; color:var(--muted2); font-size:10px; cursor:pointer;
+      padding:2px 3px; flex-shrink:0; opacity:0; transition:opacity 0.15s; line-height:1; border-radius:3px;
+    }
+    .q-item:hover .q-delete { opacity:1; }
+    .q-delete:hover { color:var(--red); background:rgba(255,92,92,0.08); }
+    #generate-form-inner {
+      background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;
+    }
+    .q-form-group { margin-bottom:8px; }
+    .q-form-label { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; display:block; }
+    #questions-prep-body { padding:12px; }
+    #questions-prep-body .empty-state { padding:20px 12px; }
+
     /* ── AI Question Suggestion (B3) ── */
     #ai-question-card {
       background: rgba(78,205,196,0.07);
@@ -612,15 +658,26 @@
 
   <!-- Main layout -->
   <main>
-    <!-- Talking points left -->
+    <!-- Left panel with tabs: Talking Points / Questions -->
     <div class="panel" id="questions-panel">
-      <div class="panel-header">
-        <span class="panel-title">Talking Points</span>
-        <div style="display:flex;align-items:center;gap:6px;">
+      <div class="panel-header" style="flex-direction:column;gap:6px;padding:9px 14px;">
+        <div class="tab-nav">
+          <button class="tab-btn active" id="tab-talking" onclick="switchTab('talking')">Talking Points</button>
+          <button class="tab-btn" id="tab-questions" onclick="switchTab('questions')">Questions <span id="q-prep-count" class="panel-count" style="display:none;"></span></button>
+        </div>
+        <div id="talking-controls" style="display:flex;align-items:center;gap:6px;width:100%;">
           <button class="btn btn-outline" id="suggest-btn" onclick="suggestQuestion()" style="font-size:10px;padding:4px 10px;" title="AI-suggest a follow-up question">💬 Suggest</button>
           <span class="panel-count" id="q-count"></span>
         </div>
+        <div id="questions-controls" style="display:none;align-items:center;gap:5px;width:100%;">
+          <button class="btn btn-outline" onclick="addQuestionManual()" style="font-size:10px;padding:4px 8px;" title="Add question manually">+ Add</button>
+          <button class="btn btn-outline" onclick="toggleGenerateForm()" style="font-size:10px;padding:4px 8px;" title="Generate with AI">✨ Generate</button>
+          <button class="btn btn-outline" onclick="nextQuestion()" style="font-size:10px;padding:4px 8px;" title="Next unanswered (Ctrl+→)" id="next-q-btn">Next →</button>
+          <span class="panel-count" id="q-progress-badge" style="margin-left:auto;display:none;"></span>
+        </div>
       </div>
+
+      <!-- Talking Points tab body -->
       <div class="panel-body" id="questions-body">
         <div id="ai-question-card">
           <div class="ai-question-label">AI suggested →</div>
@@ -638,6 +695,37 @@
           <div class="intel-body" id="guest-intel-body"></div>
         </div>
         <div class="empty-state">Start talking.<br>PodPal will suggest follow-up questions as the conversation moves.</div>
+      </div>
+
+      <!-- Questions tab body -->
+      <div id="questions-prep-body" style="display:none;flex:1;overflow-y:auto;">
+        <!-- Generate form (toggled) -->
+        <div id="generate-form-inner" style="display:none;">
+          <div class="q-form-group">
+            <label class="q-form-label">Guest name</label>
+            <input class="form-input" id="qgen-guest" placeholder="Guest name" style="font-size:12px;padding:7px 10px;">
+          </div>
+          <div class="q-form-group">
+            <label class="q-form-label">Topic / focus</label>
+            <input class="form-input" id="qgen-topic" placeholder="What to dig into" style="font-size:12px;padding:7px 10px;">
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-primary" onclick="generateQuestions()" style="flex:1;font-size:12px;padding:8px;" id="qgen-btn">Generate 12 Questions</button>
+            <button class="btn btn-outline" onclick="toggleGenerateForm()" style="font-size:11px;padding:8px 10px;">✕</button>
+          </div>
+          <div id="qgen-loading" style="display:none;text-align:center;padding:8px 0;color:var(--muted);font-size:12px;">
+            <div class="spinner" style="display:inline-block;vertical-align:middle;margin-right:4px;"></div>
+            Generating questions...
+          </div>
+        </div>
+        <!-- Manual add form (toggled) -->
+        <div id="manual-add-form" style="display:none;margin-bottom:10px;">
+          <input class="form-input" id="manual-q-input" placeholder="Type question, press Enter to add" style="font-size:12px;padding:7px 10px;" onkeydown="handleManualQInput(event)">
+        </div>
+        <!-- Questions list -->
+        <div id="questions-list">
+          <div class="empty-state" id="questions-empty">No questions yet.<br>Add manually or generate with AI.</div>
+        </div>
       </div>
     </div>
 
@@ -933,7 +1021,11 @@
     function stopListening() {
       // Request post-session summary before tearing down
       if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'stop_session' }));
+        ws.send(JSON.stringify({
+          type: 'stop_session',
+          questions_asked: questions.filter(q => q.asked).map(q => q.question),
+          questions_unasked: questions.filter(q => !q.asked).map(q => q.question)
+        }));
         showSummaryLoading();
         toast('Session stopped — generating summary...');
       }
@@ -1203,12 +1295,18 @@
       } catch(e) {}
     }
 
-    // ── Feature 2: Keyboard shortcut - Space to start/stop ────────
+    // ── Feature 2: Keyboard shortcuts ────────────────────────────
     document.addEventListener('keydown', (e) => {
       // Space bar - only when not typing in an input
       if (e.code === 'Space' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
         e.preventDefault();
         if (sessionId) toggleMic();
+      }
+      // Ctrl+→ - next unanswered question
+      if (e.ctrlKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextQuestion();
+        switchTab('questions');
       }
     });
 
@@ -1386,6 +1484,223 @@
       document.getElementById('ai-question-card').style.display = 'none';
     }
 
+    // ── Questions Panel ───────────────────────────────────────────
+    let questions = [];
+    let activeQuestionId = null;
+    const Q_STORAGE_KEY = 'podpal_questions_v1';
+
+    function loadQuestionsFromStorage() {
+      try {
+        const saved = localStorage.getItem(Q_STORAGE_KEY);
+        if (saved) {
+          questions = JSON.parse(saved);
+          renderQuestions();
+          updateQProgressBadge();
+        }
+      } catch(e) { questions = []; }
+    }
+
+    function saveQuestionsToStorage() {
+      try { localStorage.setItem(Q_STORAGE_KEY, JSON.stringify(questions)); } catch(e) {}
+    }
+
+    function switchTab(tab) {
+      const isTalking = tab === 'talking';
+      document.getElementById('tab-talking').classList.toggle('active', isTalking);
+      document.getElementById('tab-questions').classList.toggle('active', !isTalking);
+      document.getElementById('questions-body').style.display = isTalking ? '' : 'none';
+      document.getElementById('questions-prep-body').style.display = isTalking ? 'none' : '';
+      document.getElementById('talking-controls').style.display = isTalking ? 'flex' : 'none';
+      document.getElementById('questions-controls').style.display = isTalking ? 'none' : 'flex';
+    }
+
+    function addQuestionManual() {
+      const form = document.getElementById('manual-add-form');
+      const isHidden = !form.style.display || form.style.display === 'none';
+      form.style.display = isHidden ? '' : 'none';
+      if (isHidden) document.getElementById('manual-q-input').focus();
+    }
+
+    function handleManualQInput(e) {
+      if (e.key === 'Enter') {
+        const input = document.getElementById('manual-q-input');
+        const text = input.value.trim();
+        if (text) {
+          addSingleQuestion({ id: 'q' + Date.now(), question: text, type: 'expertise', theme: 'manual' });
+          input.value = '';
+          toast('Question added');
+        }
+      }
+      if (e.key === 'Escape') {
+        document.getElementById('manual-add-form').style.display = 'none';
+      }
+    }
+
+    function toggleGenerateForm() {
+      const form = document.getElementById('generate-form-inner');
+      const isHidden = !form.style.display || form.style.display === 'none';
+      form.style.display = isHidden ? '' : 'none';
+      if (isHidden) {
+        const guestEl = document.getElementById('guest-name');
+        if (guestEl && guestEl.value.trim()) {
+          document.getElementById('qgen-guest').value = guestEl.value.trim();
+        }
+        document.getElementById('qgen-guest').focus();
+      }
+    }
+
+    async function generateQuestions() {
+      const guestName = document.getElementById('qgen-guest').value.trim();
+      const topic = document.getElementById('qgen-topic').value.trim();
+      if (!guestName) { toast('Enter a guest name first'); return; }
+
+      const btn = document.getElementById('qgen-btn');
+      const loading = document.getElementById('qgen-loading');
+      btn.style.display = 'none';
+      loading.style.display = '';
+
+      try {
+        let guestProfile = {};
+        const slug = guestName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        try {
+          const pr = await fetch(`/api/guests/${slug}`);
+          if (pr.ok) guestProfile = await pr.json();
+        } catch(e) {}
+
+        const res = await fetch('/api/questions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guest_name: guestName, topic, guest_profile: guestProfile, num_questions: 12 })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          const msg = err.error || 'Generation failed';
+          toast(msg.includes('API key') ? 'AI generation requires ANTHROPIC_API_KEY on server' : 'Generation failed: ' + msg);
+          return;
+        }
+
+        const data = await res.json();
+        const newQs = data.questions || [];
+        newQs.forEach(q => addSingleQuestion(q));
+        document.getElementById('generate-form-inner').style.display = 'none';
+        toast(`Generated ${newQs.length} questions for ${guestName}`);
+      } catch(e) {
+        toast('Generation failed — check connection');
+        console.error('generateQuestions error:', e);
+      } finally {
+        btn.style.display = '';
+        loading.style.display = 'none';
+      }
+    }
+
+    function addSingleQuestion(q) {
+      questions.push({
+        id: q.id || ('q' + Date.now() + Math.random().toString(36).slice(2,6)),
+        question: q.question,
+        type: q.type || 'expertise',
+        theme: q.theme || '',
+        asked: false
+      });
+      saveQuestionsToStorage();
+      renderQuestions();
+      updateQProgressBadge();
+    }
+
+    function deleteQuestion(id, event) {
+      if (event) event.stopPropagation();
+      questions = questions.filter(q => q.id !== id);
+      if (activeQuestionId === id) {
+        const next = questions.find(q => !q.asked);
+        activeQuestionId = next ? next.id : null;
+      }
+      saveQuestionsToStorage();
+      renderQuestions();
+      updateQProgressBadge();
+    }
+
+    function markAsked(id) {
+      const q = questions.find(q => q.id === id);
+      if (!q) return;
+      q.asked = !q.asked;
+      if (q.asked && activeQuestionId === id) {
+        const nextUnanswered = questions.find(q2 => !q2.asked);
+        activeQuestionId = nextUnanswered ? nextUnanswered.id : null;
+      }
+      saveQuestionsToStorage();
+      renderQuestions();
+      updateQProgressBadge();
+    }
+
+    function nextQuestion() {
+      const remaining = questions.filter(q => !q.asked);
+      if (!remaining.length) { toast('All questions asked!'); return; }
+      if (!activeQuestionId) {
+        activeQuestionId = remaining[0].id;
+      } else {
+        const idx = remaining.findIndex(q => q.id === activeQuestionId);
+        activeQuestionId = remaining[idx === -1 ? 0 : (idx + 1) % remaining.length].id;
+      }
+      renderQuestions();
+      const el = document.querySelector(`.q-item[data-id="${activeQuestionId}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function updateQProgressBadge() {
+      const total = questions.length;
+      const asked = questions.filter(q => q.asked).length;
+      const badge = document.getElementById('q-progress-badge');
+      const tabBadge = document.getElementById('q-prep-count');
+      if (badge) { badge.textContent = total ? `${asked}/${total} asked` : ''; badge.style.display = total ? '' : 'none'; }
+      if (tabBadge) { tabBadge.textContent = total ? String(total) : ''; tabBadge.style.display = total ? '' : 'none'; }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderQuestions() {
+      const list = document.getElementById('questions-list');
+      if (!list) return;
+      const empty = document.getElementById('questions-empty');
+      if (!questions.length) {
+        list.innerHTML = '';
+        if (empty) empty.style.display = '';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      // Ensure a valid active question
+      if (!activeQuestionId || !questions.find(q => q.id === activeQuestionId && !q.asked)) {
+        const first = questions.find(q => !q.asked);
+        activeQuestionId = first ? first.id : null;
+      }
+
+      // Group by type for organised display
+      const typeOrder = ['warmup', 'expertise', 'challenge', 'vision', 'personal'];
+      const grouped = {};
+      questions.forEach(q => {
+        const t = typeOrder.includes(q.type) ? q.type : 'expertise';
+        if (!grouped[t]) grouped[t] = [];
+        grouped[t].push(q);
+      });
+
+      let html = '';
+      typeOrder.forEach(type => {
+        if (!grouped[type]) return;
+        grouped[type].forEach(q => {
+          const isActive = q.id === activeQuestionId && !q.asked;
+          html += `<div class="q-item${isActive ? ' q-active' : ''}${q.asked ? ' q-asked' : ''}" data-id="${q.id}" onclick="markAsked('${q.id}')">
+            <span class="q-drag-handle">⋮</span>
+            <span class="q-type-badge type-${q.type || 'expertise'}">${q.type || 'q'}</span>
+            <span class="q-text">${escapeHtml(q.question)}</span>
+            <button class="q-delete" onclick="deleteQuestion('${q.id}', event)" title="Delete">✕</button>
+          </div>`;
+        });
+      });
+      list.innerHTML = html;
+    }
+
     // ── Trial system ──────────────────────────────────────────────
 
     async function initTrial() {
@@ -1464,13 +1779,14 @@
 
     window.onload = () => {
       loadSetup();
+      loadQuestionsFromStorage();
       showSetup();
       // Auto-save setup fields on change
       ['host-name','show-name','host-topics'].forEach(id => {
         document.getElementById(id).addEventListener('change', saveSetup);
       });
       // Space bar hint in header
-      toast('Tip: press Space to start/stop recording');
+      toast('Tip: press Space to start/stop · Ctrl+→ for next question');
       // Load trial status
       initTrial();
     };
