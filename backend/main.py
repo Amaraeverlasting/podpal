@@ -979,6 +979,17 @@ Return as a JSON array of objects:
 
 Return ONLY the JSON array, no other text."""
 
+    # Check for pre-loaded questions from guest profile first (fallback)
+    def get_preloaded_questions(name):
+        slug = name.lower().replace(" ", "-").replace(".", "")
+        gf = GUESTS_DIR / f"{slug}.json"
+        if gf.exists():
+            data = json.loads(gf.read_text())
+            qs = data.get("suggested_questions", [])
+            if qs:
+                return [{"id": f"q{i+1}", "question": q, "type": "expertise", "theme": "general"} for i, q in enumerate(qs)]
+        return []
+
     try:
         message = await claude.messages.create(
             model="claude-haiku-4-5",
@@ -989,12 +1000,17 @@ Return ONLY the JSON array, no other text."""
         try:
             questions = json.loads(raw)
         except Exception:
-            start = raw.find('[')
-            end = raw.rfind(']') + 1
+            start = raw.find("[")
+            end = raw.rfind("]") + 1
             questions = json.loads(raw[start:end])
         return {"questions": questions, "guest": guest_name, "topic": topic}
     except Exception as e:
         print(f"Generate questions error: {e}")
+        # Fallback to pre-loaded questions
+        preloaded = get_preloaded_questions(guest_name)
+        if preloaded:
+            print(f"Using {len(preloaded)} pre-loaded questions for {guest_name}")
+            return {"questions": preloaded, "guest": guest_name, "topic": topic, "source": "preloaded"}
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
