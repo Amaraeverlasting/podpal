@@ -16,7 +16,7 @@
       --red: #ff5c5c;
       --green: #4ade80;
       --text: #e8e8f0;
-      --muted: #6b7280;
+      --muted: #c9cdd4;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -47,7 +47,7 @@
     }
     .status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.5 } }
-    .status-label { font-size: 13px; color: var(--muted); }
+    .status-label { font-size: 15px; color: var(--text); }
     .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
     .btn {
       padding: 7px 16px; border-radius: 8px; border: none;
@@ -99,11 +99,11 @@
       flex-shrink: 0;
     }
     .panel-title {
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: var(--muted);
+      color: var(--text);
     }
     .panel-badge {
       font-size: 10px;
@@ -132,8 +132,8 @@
     }
     .research-source::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
     .research-text {
-      font-size: 13px;
-      line-height: 1.7;
+      font-size: 16px;
+      line-height: 1.8;
       color: var(--text);
       white-space: pre-wrap;
     }
@@ -159,10 +159,10 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 14px;
+      padding: 14px 16px;
       margin-bottom: 10px;
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 17px;
+      line-height: 1.6;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
@@ -195,9 +195,9 @@
       border-top: 1px solid var(--border);
     }
     #transcript-text {
-      font-size: 15px;
-      line-height: 1.6;
-      color: rgba(232,232,240,0.7);
+      font-size: 20px;
+      line-height: 1.7;
+      color: rgba(232,232,240,0.9);
       font-family: "Georgia", serif;
       padding: 14px 20px;
       overflow-y: auto;
@@ -227,7 +227,7 @@
     .modal-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
     .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
     .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+    .form-label { font-size: 14px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
     .form-input {
       width: 100%;
       background: var(--bg);
@@ -259,7 +259,25 @@
     }
     #toast.show { transform: translateY(0); opacity: 1; }
 
-    .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 32px 16px; }
+    .empty-state { color: var(--muted); font-size: 18px; text-align: center; padding: 32px 16px; }
+
+    /* Research status dot */
+    .research-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 6px; vertical-align: middle;
+      transition: background 0.3s;
+    }
+    .research-dot.idle { background: var(--muted); }
+    .research-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+    .research-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+
+    /* Question dismiss button */
+    .q-dismiss {
+      float: right; cursor: pointer; color: var(--muted);
+      font-size: 18px; line-height: 1; padding: 0 2px;
+      opacity: 0.5; transition: opacity 0.2s;
+    }
+    .q-dismiss:hover { opacity: 1; color: var(--red); }
     .new-topic-flash { animation: flash 1s ease; }
     @keyframes flash { 0%,100% { background: var(--bg) } 50% { background: rgba(124,109,240,0.08) } }
   </style>
@@ -323,7 +341,7 @@
     <!-- Research (right) -->
     <div class="panel" id="research-panel">
       <div class="panel-header">
-        <span class="panel-title">🔬 Live Research</span>
+        <span class="panel-title">🔬 Live Research <span class="research-dot idle" id="research-status-dot" title="Waiting for topic"></span></span>
         <span class="panel-badge" id="research-source">—</span>
       </div>
       <div class="panel-body" id="research-body">
@@ -418,27 +436,56 @@
       el.scrollTop = el.scrollHeight;
     }
 
+    let _allQuestions = [];
+
     function updateTopic(topic, changed, questions, factChecks) {
       document.getElementById('topic-badge').textContent = topic || 'Detecting...';
 
-      if (changed || questions?.length) {
-        const body = document.getElementById('questions-body');
-        const qs = questions || [];
-        document.getElementById('q-count').textContent = qs.length;
+      if (questions?.length) {
+        // Accumulate questions - do NOT wipe existing ones
+        questions.forEach(q => {
+          if (!_allQuestions.includes(q)) _allQuestions.push(q);
+        });
+        renderQuestions();
+      }
 
-        if (qs.length) {
-          body.classList.add('new-topic-flash');
-          setTimeout(() => body.classList.remove('new-topic-flash'), 1000);
-          body.innerHTML = qs.map(q =>
-            `<div class="question-item">${q}</div>`
-          ).join('');
-        }
+      // Show research loading (but keep questions intact)
+      if (changed && topic) {
+        setResearchStatus('loading');
+        document.getElementById('research-body').innerHTML =
+          `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"...</div>`;
+      }
+    }
 
-        // Show research loading
-        if (changed) {
-          document.getElementById('research-body').innerHTML =
-            `<div class="research-loading"><div class="spinner"></div> Researching "${topic}"...</div>`;
-        }
+    function renderQuestions() {
+      const body = document.getElementById('questions-body');
+      document.getElementById('q-count').textContent = _allQuestions.length;
+      if (!_allQuestions.length) return;
+      body.innerHTML = _allQuestions.map((q, i) =>
+        `<div class="question-item" id="qi-${i}">
+          <span class="q-dismiss" onclick="dismissQuestion(${i})" title="Dismiss">×</span>
+          ${q}
+        </div>`
+      ).join('');
+    }
+
+    function dismissQuestion(idx) {
+      _allQuestions.splice(idx, 1);
+      renderQuestions();
+    }
+
+    function setResearchStatus(state) {
+      const dot = document.getElementById('research-status-dot');
+      if (!dot) return;
+      if (state === 'loading') {
+        dot.className = 'research-dot loading';
+        dot.title = 'Fetching research...';
+      } else if (state === 'live') {
+        dot.className = 'research-dot live';
+        dot.title = 'Topic detected - research active';
+      } else {
+        dot.className = 'research-dot idle';
+        dot.title = 'Waiting for topic';
       }
     }
 
@@ -447,6 +494,7 @@
       document.getElementById('research-body').innerHTML =
         `<div class="research-source">${source} · ${topic}</div>
          <div class="research-text">${research}</div>`;
+      setResearchStatus('live');
     }
 
     function addFactCheck(claim, result, source) {

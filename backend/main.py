@@ -287,20 +287,26 @@ async def detect_topic(text: str, host_profile: dict, current_topic: str) -> dic
 
     host_name = host_profile.get("name", "the host")
     host_topics = ", ".join(host_profile.get("topics", []))
+    guest = host_profile.get("guest", "")
+    episode_notes = host_profile.get("notes", "")
+
+    guest_ctx = f"\nGuest: {guest}" if guest else ""
+    notes_ctx = f"\nEpisode notes: {episode_notes}" if episode_notes else ""
 
     prompt = f"""You are analysing a live podcast transcript excerpt.
-Host: {host_name} | Usual topics: {host_topics}
+Host: {host_name} | Usual topics: {host_topics}{guest_ctx}{notes_ctx}
 Previous topic: {current_topic or "none yet"}
 
 Recent transcript (last ~60 seconds):
 "{text}"
 
+Generate questions SPECIFIC to this guest and episode context, not generic probes.
 Respond in JSON only:
 {{
   "topic": "2-5 word topic label",
   "changed": true/false,
   "entities": ["specific names/stats/claims mentioned"],
-  "suggested_questions": ["2-3 follow-up questions the host could ask"],
+  "suggested_questions": ["2-3 specific follow-up questions tailored to this guest and episode"],
   "fact_check": ["any specific factual claims that should be verified"]
 }}"""
 
