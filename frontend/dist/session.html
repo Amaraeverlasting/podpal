@@ -1,379 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodPal - Session</title>
-  <style>
-    :root {
-      --bg: #0a0a0f; --surface: #13131a; --surface2: #1a1a24;
-      --border: rgba(255,255,255,0.07); --accent: #7c6df0;
-      --accent2: #4ecdc4; --text: #e8e8f0; --muted: #6b7280;
-      --green: #4ade80; --red: #ff5c5c;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: var(--bg); color: var(--text); min-height: 100vh;
-    }
-    nav {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 0 24px; height: 52px; display: flex; align-items: center;
-      gap: 20px; position: sticky; top: 0; z-index: 50;
-    }
-    .nav-logo { font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; }
-    .nav-logo span { color: var(--accent2); }
-    .nav-links { display: flex; gap: 20px; }
-    .nav-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
-    .nav-links a:hover { color: var(--text); }
-    .nav-right { margin-left: auto; }
-    .back-link {
-      font-size: 13px; color: var(--muted); text-decoration: none;
-      display: flex; align-items: center; gap: 6px; transition: color 0.15s;
-    }
-    .back-link:hover { color: var(--text); }
-    .main { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
-    .session-header { margin-bottom: 32px; }
-    .session-title { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px; }
-    .session-meta { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
-    .meta-pill {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 4px 12px;
-      font-size: 12px; color: var(--muted);
-    }
-    .meta-pill strong { color: var(--text); }
-    .export-btn {
-      background: var(--accent); color: white; border: none;
-      border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700;
-      cursor: pointer; text-decoration: none; transition: background 0.15s;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .export-btn:hover { background: #6a5de0; }
-    .section { margin-bottom: 28px; }
-    .section-label {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.8px; color: var(--muted); margin-bottom: 12px;
-    }
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px;
-    }
-    .transcript-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px;
-      max-height: 320px; overflow-y: auto;
-      font-size: 14px; line-height: 1.75; color: rgba(232,232,240,0.85);
-      font-family: "Georgia", serif;
-    }
-    .transcript-box::-webkit-scrollbar { width: 3px; }
-    .transcript-box::-webkit-scrollbar-thumb { background: var(--surface2); }
-    .topic-tag {
-      display: inline-block; background: rgba(124,109,240,0.12);
-      border: 1px solid rgba(124,109,240,0.25); color: var(--accent);
-      border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
-      margin: 0 6px 6px 0;
-    }
-    .research-card {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px; margin-bottom: 12px;
-    }
-    .research-card:last-child { margin-bottom: 0; }
-    .research-card-topic {
-      font-size: 10px; color: var(--accent2); text-transform: uppercase;
-      letter-spacing: 0.6px; font-weight: 700; margin-bottom: 8px;
-    }
-    .research-card-body { font-size: 13px; line-height: 1.65; color: rgba(232,232,240,0.85); }
-    .research-source { font-size: 10px; color: var(--muted); margin-top: 8px; }
-    .point-row {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-      font-size: 13px; line-height: 1.5;
-    }
-    .point-row:last-child { border-bottom: none; }
-    .point-num { font-size: 10px; color: var(--accent); font-weight: 700; min-width: 16px; padding-top: 2px; opacity: 0.7; }
-    .clip-item {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
-      font-size: 13px; line-height: 1.6; color: rgba(232,232,240,0.85);
-    }
-    .clip-ts { font-size: 11px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; }
-    .show-notes-box {
-      background: var(--surface2); border-radius: 10px; padding: 20px;
-      font-size: 14px; line-height: 1.75; color: rgba(232,232,240,0.85);
-      white-space: pre-wrap;
-    }
-    .post-item {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
-      display: flex; align-items: flex-start; gap: 10px;
-    }
-    .post-item:last-child { margin-bottom: 0; }
-    .post-text { font-size: 13px; line-height: 1.6; flex: 1; }
-    .post-copy {
-      padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); font-size: 11px;
-      cursor: pointer; flex-shrink: 0; transition: all 0.15s;
-    }
-    .post-copy:hover { color: var(--text); border-color: var(--accent); }
-    .empty-section { color: var(--muted); font-size: 13px; font-style: italic; padding: 12px 0; }
-    .loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 14px; }
-    .error-msg { text-align: center; padding: 80px 24px; color: var(--red); font-size: 14px; }
-    @media (max-width: 640px) {
-      .session-meta { gap: 10px; }
-    }
-  </style>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>PodPal - Session</title>
+ <style>
+ :root {
+ --bg: #0a0a0f; --surface: #13131a; --surface2: #1a1a24;
+ --border: rgba(255,255,255,0.07); --accent: #7c6df0;
+ --accent2: #4ecdc4; --text: #e8e8f0; --muted: #6b7280;
+ --green: #4ade80; --red: #ff5c5c;
+ }
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+ background: var(--bg); color: var(--text); min-height: 100vh;
+ }
+ nav {
+ background: var(--surface); border-bottom: 1px solid var(--border);
+ padding: 0 24px; height: 52px; display: flex; align-items: center;
+ gap: 20px; position: sticky; top: 0; z-index: 50;
+ }
+ .nav-logo { font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; }
+ .nav-logo span { color: var(--accent2); }
+ .nav-links { display: flex; gap: 20px; }
+ .nav-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+ .nav-links a:hover { color: var(--text); }
+ .nav-right { margin-left: auto; }
+ .back-link {
+ font-size: 13px; color: var(--muted); text-decoration: none;
+ display: flex; align-items: center; gap: 6px; transition: color 0.15s;
+ }
+ .back-link:hover { color: var(--text); }
+ .main { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+ .session-header { margin-bottom: 32px; }
+ .session-title { font-size: 28px; font-weight: 800; color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px; }
+ .session-meta { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+ .meta-pill {
+ background: var(--surface); border: 1px solid var(--border);
+ border-radius: 20px; padding: 4px 12px;
+ font-size: 12px; color: var(--muted);
+ }
+ .meta-pill strong { color: var(--text); }
+ .export-btn {
+ background: var(--accent); color: white; border: none;
+ border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 700;
+ cursor: pointer; text-decoration: none; transition: background 0.15s;
+ display: inline-flex; align-items: center; gap: 6px;
+ }
+ .export-btn:hover { background: #6a5de0; }
+ .section { margin-bottom: 28px; }
+ .section-label {
+ font-size: 10px; font-weight: 700; text-transform: uppercase;
+ letter-spacing: 0.8px; color: var(--muted); margin-bottom: 12px;
+ }
+ .card {
+ background: var(--surface); border: 1px solid var(--border);
+ border-radius: 14px; padding: 20px;
+ }
+ .transcript-box {
+ background: var(--surface); border: 1px solid var(--border);
+ border-radius: 14px; padding: 20px;
+ max-height: 320px; overflow-y: auto;
+ font-size: 14px; line-height: 1.75; color: rgba(232,232,240,0.85);
+ font-family: "Georgia", serif;
+ }
+ .transcript-box::-webkit-scrollbar { width: 3px; }
+ .transcript-box::-webkit-scrollbar-thumb { background: var(--surface2); }
+ .topic-tag {
+ display: inline-block; background: rgba(124,109,240,0.12);
+ border: 1px solid rgba(124,109,240,0.25); color: var(--accent);
+ border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+ margin: 0 6px 6px 0;
+ }
+ .research-card {
+ background: var(--surface2); border: 1px solid var(--border);
+ border-radius: 10px; padding: 16px; margin-bottom: 12px;
+ }
+ .research-card:last-child { margin-bottom: 0; }
+ .research-card-topic {
+ font-size: 10px; color: var(--accent2); text-transform: uppercase;
+ letter-spacing: 0.6px; font-weight: 700; margin-bottom: 8px;
+ }
+ .research-card-body { font-size: 13px; line-height: 1.65; color: rgba(232,232,240,0.85); }
+ .research-source { font-size: 10px; color: var(--muted); margin-top: 8px; }
+ .point-row {
+ display: flex; align-items: flex-start; gap: 10px;
+ padding: 10px 0; border-bottom: 1px solid var(--border);
+ font-size: 13px; line-height: 1.5;
+ }
+ .point-row:last-child { border-bottom: none; }
+ .point-num { font-size: 10px; color: var(--accent); font-weight: 700; min-width: 16px; padding-top: 2px; opacity: 0.7; }
+ .clip-item {
+ background: var(--surface2); border: 1px solid var(--border);
+ border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+ font-size: 13px; line-height: 1.6; color: rgba(232,232,240,0.85);
+ }
+ .clip-ts { font-size: 11px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; }
+ .show-notes-box {
+ background: var(--surface2); border-radius: 10px; padding: 20px;
+ font-size: 14px; line-height: 1.75; color: rgba(232,232,240,0.85);
+ white-space: pre-wrap;
+ }
+ .post-item {
+ background: var(--surface2); border: 1px solid var(--border);
+ border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+ display: flex; align-items: flex-start; gap: 10px;
+ }
+ .post-item:last-child { margin-bottom: 0; }
+ .post-text { font-size: 13px; line-height: 1.6; flex: 1; }
+ .post-copy {
+ padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
+ background: transparent; color: var(--muted); font-size: 11px;
+ cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+ }
+ .post-copy:hover { color: var(--text); border-color: var(--accent); }
+ .empty-section { color: var(--muted); font-size: 13px; font-style: italic; padding: 12px 0; }
+ .loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 14px; }
+ .error-msg { text-align: center; padding: 80px 24px; color: var(--red); font-size: 14px; }
+ @media (max-width: 640px) {
+ .session-meta { gap: 10px; }
+ }
+ </style>
 </head>
 <body>
-  <nav>
-    <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
-    <div class="nav-links">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/app">App</a>
-    </div>
-    <div class="nav-right">
-      <a href="/dashboard" class="back-link">← Back to Dashboard</a>
-    </div>
-  </nav>
+ <nav>
+ <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
+ <div class="nav-links">
+ <a href="/dashboard">Dashboard</a>
+ <a href="/app">App</a>
+ </div>
+ <div class="nav-right">
+ <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+ </div>
+ </nav>
 
-  <div class="main" id="main">
-    <div class="loading">Loading session...</div>
-  </div>
+ <div class="main" id="main">
+ <div class="loading">Loading session...</div>
+ </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('id');
+ <script>
+ const params = new URLSearchParams(window.location.search);
+ const sessionId = params.get('id');
 
-    async function init() {
-      if (!sessionId) {
-        showError('No session ID provided. <a href="/dashboard" style="color:var(--accent)">Go to Dashboard</a>');
-        return;
-      }
-      try {
-        const res = await fetch(`/api/session/${sessionId}`);
-        if (res.status === 401) { window.location.href = '/login'; return; }
-        if (res.status === 403) { showError('Access denied to this session.'); return; }
-        if (res.status === 404) { showError('Session not found.'); return; }
-        if (!res.ok) { showError('Failed to load session.'); return; }
-        const data = await res.json();
-        render(data);
-      } catch (e) {
-        showError('Could not load session. Check connection.');
-      }
-    }
+ async function init() {
+ if (!sessionId) {
+ showError('No session ID provided. <a href="/dashboard" style="color:var(--accent)">Go to Dashboard</a>');
+ return;
+ }
+ try {
+ const res = await fetch(`/api/session/${sessionId}`);
+ if (res.status === 401) { window.location.href = '/login'; return; }
+ if (res.status === 403) { showError('Access denied to this session.'); return; }
+ if (res.status === 404) { showError('Session not found.'); return; }
+ if (!res.ok) { showError('Failed to load session.'); return; }
+ const data = await res.json();
+ render(data);
+ } catch (e) {
+ showError('Could not load session. Check connection.');
+ }
+ }
 
-    function fmtDur(s) {
-      if (!s) return '0m';
-      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-      return h > 0 ? `${h}h ${m}m` : `${m}m`;
-    }
+ function fmtDur(s) {
+ if (!s) return '0m';
+ const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+ return h > 0 ? `${h}h ${m}m` : `${m}m`;
+ }
 
-    function fmtDate(str) {
-      if (!str) return '';
-      try { return new Date(str).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' }); }
-      catch { return str; }
-    }
+ function fmtDate(str) {
+ if (!str) return '';
+ try { return new Date(str).toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' }); }
+ catch { return str; }
+ }
 
-    function escHtml(str) {
-      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+ function escHtml(str) {
+ return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ }
 
-    function render(data) {
-      const meta = data.metadata || {};
-      const guest = meta.guest || data.guest || 'Unknown Guest';
-      const date = meta.date || '';
-      const host = meta.host || '';
-      const show = meta.show || '';
-      const dur = data.duration_seconds || 0;
-      const topics = data.topics_detected || [];
-      const questions = data.suggested_questions || [];
-      const research = data.research_cards || [];
-      const clips = data.clips || [];
-      const showNotes = data.show_notes || '';
-      const posts = data.social_posts || [];
-      // Full transcript from snippets or full_transcript field
-      const transcriptFull = data.full_transcript_text || data.transcript_text || '';
-      const snippets = data.transcript_snippets || [];
-      const transcriptDisplay = transcriptFull || snippets.join(' ... ');
+ function render(data) {
+ const meta = data.metadata || {};
+ const guest = meta.guest || data.guest || 'Unknown Guest';
+ const date = meta.date || '';
+ const host = meta.host || '';
+ const show = meta.show || '';
+ const dur = data.duration_seconds || 0;
+ const topics = data.topics_detected || [];
+ const questions = data.suggested_questions || [];
+ const research = data.research_cards || [];
+ const clips = data.clips || [];
+ const showNotes = data.show_notes || '';
+ const posts = data.social_posts || [];
+ // Full transcript from snippets or full_transcript field
+ const transcriptFull = data.full_transcript_text || data.transcript_text || '';
+ const snippets = data.transcript_snippets || [];
+ const transcriptDisplay = transcriptFull || snippets.join(' ... ');
 
-      document.title = `PodPal - ${guest}`;
+ document.title = `PodPal - ${guest}`;
 
-      const topicsHtml = topics.length
-        ? topics.map(t => `<span class="topic-tag">${escHtml(t)}</span>`).join('')
-        : '<span class="empty-section">No topics detected</span>';
+ const topicsHtml = topics.length
+ ? topics.map(t => `<span class="topic-tag">${escHtml(t)}</span>`).join('')
+ : '<span class="empty-section">No topics detected</span>';
 
-      const questionsHtml = questions.length
-        ? questions.map((q, i) => `
-            <div class="point-row">
-              <span class="point-num">${i + 1}</span>
-              <span>${escHtml(q)}</span>
-            </div>`).join('')
-        : '<div class="empty-section">No talking points recorded</div>';
+ const questionsHtml = questions.length
+ ? questions.map((q, i) => `
+ <div class="point-row">
+ <span class="point-num">${i + 1}</span>
+ <span>${escHtml(q)}</span>
+ </div>`).join('')
+ : '<div class="empty-section">No talking points recorded</div>';
 
-      const researchHtml = research.length
-        ? research.map(c => `
-            <div class="research-card">
-              <div class="research-card-topic">${escHtml(c.topic || '')}</div>
-              <div class="research-card-body">${escHtml(c.research || c.summary || '')}</div>
-              ${c.source ? `<div class="research-source">Source: ${escHtml(c.source)}</div>` : ''}
-            </div>`).join('')
-        : '<div class="empty-section">No research cards this session</div>';
+ const researchHtml = research.length
+ ? research.map(c => `
+ <div class="research-card">
+ <div class="research-card-topic">${escHtml(c.topic || '')}</div>
+ <div class="research-card-body">${escHtml(c.research || c.summary || '')}</div>
+ ${c.source ? `<div class="research-source">Source: ${escHtml(c.source)}</div>` : ''}
+ </div>`).join('')
+ : '<div class="empty-section">No research cards this session</div>';
 
-      const clipsHtml = clips.length
-        ? clips.map(c => `
-            <div class="clip-item">
-              <div class="clip-ts">[${escHtml(c.ts || '')}]</div>
-              <div>${escHtml(c.text || '')}</div>
-            </div>`).join('')
-        : '<div class="empty-section">No clips saved this session</div>';
+ const clipsHtml = clips.length
+ ? clips.map(c => `
+ <div class="clip-item">
+ <div class="clip-ts">[${escHtml(c.ts || '')}]</div>
+ <div>${escHtml(c.text || '')}</div>
+ </div>`).join('')
+ : '<div class="empty-section">No clips saved this session</div>';
 
-      const showNotesHtml = showNotes
-        ? `<div class="show-notes-box">${escHtml(showNotes)}</div>`
-        : '<div class="empty-section">Show notes not generated for this session</div>';
+ const showNotesHtml = showNotes
+ ? `<div class="show-notes-box">${escHtml(showNotes)}</div>`
+ : '<div class="empty-section">Show notes not generated for this session</div>';
 
-      const postsHtml = posts.length
-        ? posts.map((p, i) => `
-            <div class="post-item">
-              <span class="post-text">${escHtml(p)}</span>
-              <button class="post-copy" onclick="copyPost(${i})">Copy</button>
-            </div>`).join('')
-        : '<div class="empty-section">No social posts generated</div>';
+ const postsHtml = posts.length
+ ? posts.map((p, i) => `
+ <div class="post-item">
+ <span class="post-text">${escHtml(p)}</span>
+ <button class="post-copy" onclick="copyPost(${i})">Copy</button>
+ </div>`).join('')
+ : '<div class="empty-section">No social posts generated</div>';
 
-      const transcriptHtml = transcriptDisplay
-        ? `<div class="transcript-box">${escHtml(transcriptDisplay)}</div>`
-        : `<div class="card"><div class="empty-section">No transcript recorded</div></div>`;
+ const transcriptHtml = transcriptDisplay
+ ? `<div class="transcript-box">${escHtml(transcriptDisplay)}</div>`
+ : `<div class="card"><div class="empty-section">No transcript recorded</div></div>`;
 
-      window._sessionData = data;
-      window._sessionPosts = posts;
+ window._sessionData = data;
+ window._sessionPosts = posts;
 
-      document.getElementById('main').innerHTML = `
-        <div class="session-header">
-          <div class="session-title">${escHtml(guest)}</div>
-          <div class="session-meta">
-            ${date ? `<span class="meta-pill"><strong>Date:</strong> ${escHtml(fmtDate(date))}</span>` : ''}
-            ${dur ? `<span class="meta-pill"><strong>Duration:</strong> ${fmtDur(dur)}</span>` : ''}
-            ${show ? `<span class="meta-pill"><strong>Show:</strong> ${escHtml(show)}</span>` : ''}
-            ${host ? `<span class="meta-pill"><strong>Host:</strong> ${escHtml(host)}</span>` : ''}
-            <button class="export-btn" onclick="exportMd()">📥 Export .md</button>
-          </div>
-        </div>
+ document.getElementById('main').innerHTML = `
+ <div class="session-header">
+ <div class="session-title">${escHtml(guest)}</div>
+ <div class="session-meta">
+ ${date ? `<span class="meta-pill"><strong>Date:</strong> ${escHtml(fmtDate(date))}</span>` : ''}
+ ${dur ? `<span class="meta-pill"><strong>Duration:</strong> ${fmtDur(dur)}</span>` : ''}
+ ${show ? `<span class="meta-pill"><strong>Show:</strong> ${escHtml(show)}</span>` : ''}
+ ${host ? `<span class="meta-pill"><strong>Host:</strong> ${escHtml(host)}</span>` : ''}
+ <button class="export-btn" onclick="exportMd()"> Export .md</button>
+ </div>
+ </div>
 
-        <div class="section">
-          <div class="section-label">Topics Covered</div>
-          <div>${topicsHtml}</div>
-        </div>
+ <div class="section">
+ <div class="section-label">Topics Covered</div>
+ <div>${topicsHtml}</div>
+ </div>
 
-        <div class="section">
-          <div class="section-label">Full Transcript</div>
-          ${transcriptHtml}
-        </div>
+ <div class="section">
+ <div class="section-label">Full Transcript</div>
+ ${transcriptHtml}
+ </div>
 
-        <div class="section">
-          <div class="section-label">Talking Points Used</div>
-          <div class="card">${questionsHtml}</div>
-        </div>
+ <div class="section">
+ <div class="section-label">Talking Points Used</div>
+ <div class="card">${questionsHtml}</div>
+ </div>
 
-        <div class="section">
-          <div class="section-label">Research Cards</div>
-          <div>${researchHtml}</div>
-        </div>
+ <div class="section">
+ <div class="section-label">Research Cards</div>
+ <div>${researchHtml}</div>
+ </div>
 
-        ${clips.length ? `
-        <div class="section">
-          <div class="section-label">Clips Saved (${clips.length})</div>
-          ${clipsHtml}
-        </div>` : ''}
+ ${clips.length ? `
+ <div class="section">
+ <div class="section-label">Clips Saved (${clips.length})</div>
+ ${clipsHtml}
+ </div>` : ''}
 
-        <div class="section">
-          <div class="section-label">Show Notes</div>
-          ${showNotesHtml}
-        </div>
+ <div class="section">
+ <div class="section-label">Show Notes</div>
+ ${showNotesHtml}
+ </div>
 
-        <div class="section">
-          <div class="section-label">Social Posts</div>
-          ${postsHtml}
-        </div>
-      `;
-    }
+ <div class="section">
+ <div class="section-label">Social Posts</div>
+ ${postsHtml}
+ </div>
+ `;
+ }
 
-    function copyPost(idx) {
-      const posts = window._sessionPosts || [];
-      if (posts[idx]) {
-        navigator.clipboard.writeText(posts[idx]).then(() => {
-          const btns = document.querySelectorAll('.post-copy');
-          if (btns[idx]) { btns[idx].textContent = 'Copied!'; setTimeout(() => { btns[idx].textContent = 'Copy'; }, 1500); }
-        });
-      }
-    }
+ function copyPost(idx) {
+ const posts = window._sessionPosts || [];
+ if (posts[idx]) {
+ navigator.clipboard.writeText(posts[idx]).then(() => {
+ const btns = document.querySelectorAll('.post-copy');
+ if (btns[idx]) { btns[idx].textContent = 'Copied!'; setTimeout(() => { btns[idx].textContent = 'Copy'; }, 1500); }
+ });
+ }
+ }
 
-    function exportMd() {
-      const data = window._sessionData || {};
-      const meta = data.metadata || {};
-      const guest = meta.guest || 'Guest';
-      const date = meta.date || new Date().toISOString().split('T')[0];
-      const dur = data.duration_seconds || 0;
-      const topics = data.topics_detected || [];
-      const questions = data.suggested_questions || [];
-      const research = data.research_cards || [];
-      const clips = data.clips || [];
-      const showNotes = data.show_notes || '(no show notes generated)';
-      const posts = data.social_posts || [];
-      const snippets = data.transcript_snippets || [];
-      const transcriptFull = data.full_transcript_text || data.transcript_text || snippets.join(' ... ') || '(no transcript)';
+ function exportMd() {
+ const data = window._sessionData || {};
+ const meta = data.metadata || {};
+ const guest = meta.guest || 'Guest';
+ const date = meta.date || new Date().toISOString().split('T')[0];
+ const dur = data.duration_seconds || 0;
+ const topics = data.topics_detected || [];
+ const questions = data.suggested_questions || [];
+ const research = data.research_cards || [];
+ const clips = data.clips || [];
+ const showNotes = data.show_notes || '(no show notes generated)';
+ const posts = data.social_posts || [];
+ const snippets = data.transcript_snippets || [];
+ const transcriptFull = data.full_transcript_text || data.transcript_text || snippets.join(' ... ') || '(no transcript)';
 
-      const lines = [
-        `# Session Notes - ${guest}`,
-        '',
-        `**Date:** ${date}  |  **Duration:** ${Math.floor(dur/60)}m  |  **Show:** ${meta.show || ''}  |  **Host:** ${meta.host || ''}`,
-        '',
-        '---',
-        '',
-        '## Topics Covered',
-        '',
-        ...topics.map(t => `- ${t}`),
-        '',
-        '## Talking Points',
-        '',
-        ...questions.map((q, i) => `${i + 1}. ${q}`),
-        '',
-        '## Research Cards',
-        '',
-        ...research.map(c => [`### ${c.topic || 'Topic'}`, c.research || c.summary || '', c.source ? `*Source: ${c.source}*` : '', '']).flat(),
-        clips.length ? '## Clips' : '',
-        clips.length ? '' : '',
-        ...clips.map(c => `- **[${c.ts}]** ${c.text}`),
-        clips.length ? '' : '',
-        '## Show Notes',
-        '',
-        showNotes,
-        '',
-        '## Social Posts',
-        '',
-        ...posts.map((p, i) => [`**Post ${i+1}:**`, p, '']).flat(),
-        '## Transcript',
-        '',
-        transcriptFull,
-        '',
-        '---',
-        '*Generated by PodPal*',
-      ].filter(l => l !== false);
+ const lines = [
+ `# Session Notes - ${guest}`,
+ '',
+ `**Date:** ${date} | **Duration:** ${Math.floor(dur/60)}m | **Show:** ${meta.show || ''} | **Host:** ${meta.host || ''}`,
+ '',
+ '---',
+ '',
+ '## Topics Covered',
+ '',
+ ...topics.map(t => `- ${t}`),
+ '',
+ '## Talking Points',
+ '',
+ ...questions.map((q, i) => `${i + 1}. ${q}`),
+ '',
+ '## Research Cards',
+ '',
+ ...research.map(c => [`### ${c.topic || 'Topic'}`, c.research || c.summary || '', c.source ? `*Source: ${c.source}*` : '', '']).flat(),
+ clips.length ? '## Clips' : '',
+ clips.length ? '' : '',
+ ...clips.map(c => `- **[${c.ts}]** ${c.text}`),
+ clips.length ? '' : '',
+ '## Show Notes',
+ '',
+ showNotes,
+ '',
+ '## Social Posts',
+ '',
+ ...posts.map((p, i) => [`**Post ${i+1}:**`, p, '']).flat(),
+ '## Transcript',
+ '',
+ transcriptFull,
+ '',
+ '---',
+ '*Generated by PodPal*',
+ ].filter(l => l !== false);
 
-      const md = lines.join('\n');
-      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `session-${guest.replace(/\s+/g, '-').toLowerCase()}-${date}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
+ const md = lines.join('\n');
+ const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `session-${guest.replace(/\s+/g, '-').toLowerCase()}-${date}.md`;
+ document.body.appendChild(a);
+ a.click();
+ document.body.removeChild(a);
+ setTimeout(() => URL.revokeObjectURL(url), 1000);
+ }
 
-    function showError(msg) {
-      document.getElementById('main').innerHTML = `<div class="error-msg">${msg}</div>`;
-    }
+ function showError(msg) {
+ document.getElementById('main').innerHTML = `<div class="error-msg">${msg}</div>`;
+ }
 
-    init();
-  </script>
+ init();
+ </script>
 </body>
 </html>

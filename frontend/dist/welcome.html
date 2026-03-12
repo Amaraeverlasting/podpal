@@ -1,234 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodPal - Welcome</title>
-  <style>
-    :root {
-      --bg: #0a0a0f; --surface: #13131a; --surface2: #1a1a24;
-      --border: rgba(255,255,255,0.07); --accent: #7c6df0;
-      --accent2: #4ecdc4; --text: #e8e8f0; --muted: #6b7280;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; padding: 0 24px 48px;
-    }
-    nav {
-      width: 100%; max-width: 680px; display: flex; align-items: center;
-      gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--border);
-      margin-bottom: 48px;
-    }
-    .nav-logo { font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; }
-    .nav-logo span { color: var(--accent2); }
-    .nav-links { margin-left: auto; display: flex; gap: 20px; }
-    .nav-links a {
-      font-size: 13px; color: var(--muted); text-decoration: none;
-      transition: color 0.15s;
-    }
-    .nav-links a:hover { color: var(--text); }
-    .wrap { max-width: 560px; width: 100%; text-align: center; }
-    .pro-banner {
-      background: rgba(124,109,240,0.12);
-      border: 1px solid rgba(124,109,240,0.3);
-      border-radius: 10px; padding: 12px 20px;
-      font-size: 14px; color: var(--accent); font-weight: 600;
-      margin-bottom: 32px; display: none;
-    }
-    .pro-banner.visible { display: block; }
-    h1 {
-      font-size: 42px; font-weight: 800; line-height: 1.1;
-      color: var(--text); margin-bottom: 16px; letter-spacing: -1.5px;
-    }
-    h1 span { color: var(--accent2); }
-    .tagline { font-size: 17px; color: var(--muted); line-height: 1.6; margin-bottom: 40px; }
-    .bullets { display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; text-align: left; }
-    .bullet {
-      display: flex; gap: 14px; align-items: center;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px 18px;
-      font-size: 14px; color: var(--text); font-weight: 500;
-    }
-    .bullet-icon { font-size: 20px; flex-shrink: 0; }
-    .trial-box {
-      background: rgba(78,205,196,0.07); border: 1px solid rgba(78,205,196,0.2);
-      border-radius: 12px; padding: 18px 20px; margin-bottom: 32px;
-      font-size: 15px; color: var(--accent2); font-weight: 600;
-    }
-    .ctas { display: flex; gap: 12px; margin-bottom: 14px; }
-    .btn-primary {
-      flex: 2; background: var(--accent); color: white; border: none;
-      border-radius: 10px; padding: 15px 24px; font-size: 15px; font-weight: 700;
-      cursor: pointer; text-decoration: none; display: flex;
-      align-items: center; justify-content: center; transition: background 0.15s;
-    }
-    .btn-primary:hover { background: #6a5de0; }
-    .btn-secondary {
-      flex: 1; background: transparent; color: var(--accent2);
-      border: 1px solid rgba(78,205,196,0.3); border-radius: 10px;
-      padding: 15px 20px; font-size: 14px; font-weight: 600;
-      cursor: pointer; text-decoration: none; display: flex;
-      align-items: center; justify-content: center; transition: all 0.15s;
-    }
-    .btn-secondary:hover { background: rgba(78,205,196,0.07); border-color: rgba(78,205,196,0.5); }
-    .fine-print { font-size: 12px; color: var(--muted); line-height: 1.6; }
-    @media (max-width: 480px) {
-      h1 { font-size: 28px; }
-      .ctas { flex-direction: column; }
-      nav { flex-wrap: wrap; }
-    }
-  </style>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>PodPal - Welcome</title>
+ <style>
+ :root {
+ --bg: #0a0a0f; --surface: #13131a; --surface2: #1a1a24;
+ --border: rgba(255,255,255,0.07); --accent: #7c6df0;
+ --accent2: #4ecdc4; --text: #e8e8f0; --muted: #6b7280;
+ }
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+ background: var(--bg); color: var(--text);
+ min-height: 100vh; display: flex; flex-direction: column;
+ align-items: center; padding: 0 24px 48px;
+ }
+ nav {
+ width: 100%; max-width: 680px; display: flex; align-items: center;
+ gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--border);
+ margin-bottom: 48px;
+ }
+ .nav-logo { font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; }
+ .nav-logo span { color: var(--accent2); }
+ .nav-links { margin-left: auto; display: flex; gap: 20px; }
+ .nav-links a {
+ font-size: 13px; color: var(--muted); text-decoration: none;
+ transition: color 0.15s;
+ }
+ .nav-links a:hover { color: var(--text); }
+ .wrap { max-width: 560px; width: 100%; text-align: center; }
+ .pro-banner {
+ background: rgba(124,109,240,0.12);
+ border: 1px solid rgba(124,109,240,0.3);
+ border-radius: 10px; padding: 12px 20px;
+ font-size: 14px; color: var(--accent); font-weight: 600;
+ margin-bottom: 32px; display: none;
+ }
+ .pro-banner.visible { display: block; }
+ h1 {
+ font-size: 42px; font-weight: 800; line-height: 1.1;
+ color: var(--text); margin-bottom: 16px; letter-spacing: -1.5px;
+ }
+ h1 span { color: var(--accent2); }
+ .tagline { font-size: 17px; color: var(--muted); line-height: 1.6; margin-bottom: 40px; }
+ .bullets { display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; text-align: left; }
+ .bullet {
+ display: flex; gap: 14px; align-items: center;
+ background: var(--surface); border: 1px solid var(--border);
+ border-radius: 12px; padding: 16px 18px;
+ font-size: 14px; color: var(--text); font-weight: 500;
+ }
+ .bullet-icon { font-size: 20px; flex-shrink: 0; }
+ .trial-box {
+ background: rgba(78,205,196,0.07); border: 1px solid rgba(78,205,196,0.2);
+ border-radius: 12px; padding: 18px 20px; margin-bottom: 32px;
+ font-size: 15px; color: var(--accent2); font-weight: 600;
+ }
+ .ctas { display: flex; gap: 12px; margin-bottom: 14px; }
+ .btn-primary {
+ flex: 2; background: var(--accent); color: white; border: none;
+ border-radius: 10px; padding: 15px 24px; font-size: 15px; font-weight: 700;
+ cursor: pointer; text-decoration: none; display: flex;
+ align-items: center; justify-content: center; transition: background 0.15s;
+ }
+ .btn-primary:hover { background: #6a5de0; }
+ .btn-secondary {
+ flex: 1; background: transparent; color: var(--accent2);
+ border: 1px solid rgba(78,205,196,0.3); border-radius: 10px;
+ padding: 15px 20px; font-size: 14px; font-weight: 600;
+ cursor: pointer; text-decoration: none; display: flex;
+ align-items: center; justify-content: center; transition: all 0.15s;
+ }
+ .btn-secondary:hover { background: rgba(78,205,196,0.07); border-color: rgba(78,205,196,0.5); }
+ .fine-print { font-size: 12px; color: var(--muted); line-height: 1.6; }
+ @media (max-width: 480px) {
+ h1 { font-size: 28px; }
+ .ctas { flex-direction: column; }
+ nav { flex-wrap: wrap; }
+ }
+ </style>
 </head>
 <body>
-  <nav>
-    <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
-    <div class="nav-links">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/app">App</a>
-      <a href="/profile">Profile</a>
-      <a href="#" onclick="logout()">Logout</a>
-    </div>
-  </nav>
+ <nav>
+ <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
+ <div class="nav-links">
+ <a href="/dashboard">Dashboard</a>
+ <a href="/app">App</a>
+ <a href="/profile">Profile</a>
+ <a href="#" onclick="logout()">Logout</a>
+ </div>
+ </nav>
 
-  <div class="wrap">
-    <div class="pro-banner" id="pro-banner"></div>
+ <div class="wrap">
+ <div class="pro-banner" id="pro-banner"></div>
 
-    <h1 id="main-headline">You're about to see<br><span>something weird.</span></h1>
-    <p class="tagline">Start recording. Talk naturally. Watch what appears on screen.</p>
+ <h1 id="main-headline">You're about to see<br><span>something weird.</span></h1>
+ <p class="tagline">Start recording. Talk naturally. Watch what appears on screen.</p>
 
-    <div class="bullets">
-      <div class="bullet"><span class="bullet-icon">🎙</span>Research cards appear as you speak - no prep needed</div>
-      <div class="bullet"><span class="bullet-icon">💡</span>Guest intel pre-loaded before you hit record</div>
-      <div class="bullet"><span class="bullet-icon">📝</span>Full show notes + 3 social posts when you stop</div>
-    </div>
+ <div class="bullets">
+ <div class="bullet"><span class="bullet-icon"></span>Research cards appear as you speak - no prep needed</div>
+ <div class="bullet"><span class="bullet-icon"></span>Guest intel pre-loaded before you hit record</div>
+ <div class="bullet"><span class="bullet-icon"></span>Full show notes + 3 social posts when you stop</div>
+ </div>
 
-    <div class="trial-box" id="trial-box">
-      You have 3 free sessions over 7 days. No card needed.
-    </div>
+ <div class="trial-box" id="trial-box">
+ You have 3 free sessions over 7 days. No card needed.
+ </div>
 
-    <div id="trial-code-section" style="margin-bottom:20px;">
-      <div style="display:flex;gap:10px;align-items:stretch;">
-        <input
-          id="trial-code-input"
-          type="text"
-          placeholder="Have a trial code? Enter it here"
-          style="
-            flex:1;background:var(--surface2);border:1px solid var(--border);
-            border-radius:10px;padding:12px 16px;font-size:14px;color:var(--text);
-            outline:none;transition:border-color 0.15s;
-          "
-          onkeydown="if(event.key==='Enter')activateCode()"
-          onfocus="this.style.borderColor='var(--accent)'"
-          onblur="this.style.borderColor='var(--border)'"
-        />
-        <button
-          onclick="activateCode()"
-          id="activate-btn"
-          style="
-            background:var(--accent);color:white;border:none;border-radius:10px;
-            padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;
-            white-space:nowrap;transition:background 0.15s;
-          "
-          onmouseover="this.style.background='#6a5de0'"
-          onmouseout="this.style.background='var(--accent)'"
-        >Activate Code</button>
-      </div>
-      <div id="code-msg" style="margin-top:10px;font-size:13px;display:none;"></div>
-    </div>
+ <div id="trial-code-section" style="margin-bottom:20px;">
+ <div style="display:flex;gap:10px;align-items:stretch;">
+ <input
+ id="trial-code-input"
+ type="text"
+ placeholder="Have a trial code? Enter it here"
+ style="
+ flex:1;background:var(--surface2);border:1px solid var(--border);
+ border-radius:10px;padding:12px 16px;font-size:14px;color:var(--text);
+ outline:none;transition:border-color 0.15s;
+ "
+ onkeydown="if(event.key==='Enter')activateCode()"
+ onfocus="this.style.borderColor='var(--accent)'"
+ onblur="this.style.borderColor='var(--border)'"
+ />
+ <button
+ onclick="activateCode()"
+ id="activate-btn"
+ style="
+ background:var(--accent);color:white;border:none;border-radius:10px;
+ padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;
+ white-space:nowrap;transition:background 0.15s;
+ "
+ onmouseover="this.style.background='#6a5de0'"
+ onmouseout="this.style.background='var(--accent)'"
+ >Activate Code</button>
+ </div>
+ <div id="code-msg" style="margin-top:10px;font-size:13px;display:none;"></div>
+ </div>
 
-    <div class="ctas" id="cta-row">
-      <a href="/app" class="btn-primary">Start my first session →</a>
-      <a href="/dashboard" class="btn-secondary" id="upgrade-btn" onclick="startUpgrade(event)">Upgrade now - $19/mo</a>
-    </div>
+ <div class="ctas" id="cta-row">
+ <a href="/app" class="btn-primary">Start my first session →</a>
+ <a href="/dashboard" class="btn-secondary" id="upgrade-btn" onclick="startUpgrade(event)">Upgrade now - $19/mo</a>
+ </div>
 
-    <p class="fine-print">Loved by podcasters. Cancelled any time.</p>
-  </div>
+ <p class="fine-print">Loved by podcasters. Cancelled any time.</p>
+ </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const trialTier = params.get('trial');
-    const trialDays = params.get('days');
+ <script>
+ const params = new URLSearchParams(window.location.search);
+ const trialTier = params.get('trial');
+ const trialDays = params.get('days');
 
-    if (trialTier === 'pro' || trialTier === 'beta') {
-      document.getElementById('main-headline').innerHTML =
-        "You've been given<br><span>7-day Pro access.</span>";
-      document.getElementById('trial-box').textContent =
-        'Your ' + (trialDays || '7') + '-day Pro access is active. Full features available now.';
-      const ctaRow = document.getElementById('cta-row');
-      ctaRow.innerHTML =
-        '<a href="/app" class="btn-primary" style="flex:1">Start recording →</a>';
-      document.querySelector('.fine-print').style.display = 'none';
-    }
+ if (trialTier === 'pro' || trialTier === 'beta') {
+ document.getElementById('main-headline').innerHTML =
+ "You've been given<br><span>7-day Pro access.</span>";
+ document.getElementById('trial-box').textContent =
+ 'Your ' + (trialDays || '7') + '-day Pro access is active. Full features available now.';
+ const ctaRow = document.getElementById('cta-row');
+ ctaRow.innerHTML =
+ '<a href="/app" class="btn-primary" style="flex:1">Start recording →</a>';
+ document.querySelector('.fine-print').style.display = 'none';
+ }
 
-    async function activateCode() {
-      const input = document.getElementById('trial-code-input');
-      const btn   = document.getElementById('activate-btn');
-      const msg   = document.getElementById('code-msg');
-      const code  = input.value.trim();
-      if (!code) { showCodeMsg('Enter a code first.', false); return; }
+ async function activateCode() {
+ const input = document.getElementById('trial-code-input');
+ const btn = document.getElementById('activate-btn');
+ const msg = document.getElementById('code-msg');
+ const code = input.value.trim();
+ if (!code) { showCodeMsg('Enter a code first.', false); return; }
 
-      btn.disabled = true;
-      btn.textContent = 'Activating...';
-      msg.style.display = 'none';
+ btn.disabled = true;
+ btn.textContent = 'Activating...';
+ msg.style.display = 'none';
 
-      try {
-        const res  = await fetch('/api/trial/redeem', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          const days = data.days || data.trial_days || 7;
-          showCodeMsg(`Code activated! Your ${days}-day trial is ready.`, true);
-          input.disabled = true;
-          btn.style.display = 'none';
-          setTimeout(() => { window.location.href = '/app'; }, 2000);
-        } else {
-          showCodeMsg(data.detail || data.error || 'Invalid or expired code.', false);
-          btn.disabled = false;
-          btn.textContent = 'Activate Code';
-        }
-      } catch (err) {
-        showCodeMsg('Could not connect. Please try again.', false);
-        btn.disabled = false;
-        btn.textContent = 'Activate Code';
-      }
-    }
+ try {
+ const res = await fetch('/api/trial/redeem', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ code }),
+ });
+ const data = await res.json();
+ if (res.ok && data.success) {
+ const days = data.days || data.trial_days || 7;
+ showCodeMsg(`Code activated! Your ${days}-day trial is ready.`, true);
+ input.disabled = true;
+ btn.style.display = 'none';
+ setTimeout(() => { window.location.href = '/app'; }, 2000);
+ } else {
+ showCodeMsg(data.detail || data.error || 'Invalid or expired code.', false);
+ btn.disabled = false;
+ btn.textContent = 'Activate Code';
+ }
+ } catch (err) {
+ showCodeMsg('Could not connect. Please try again.', false);
+ btn.disabled = false;
+ btn.textContent = 'Activate Code';
+ }
+ }
 
-    function showCodeMsg(text, success) {
-      const el = document.getElementById('code-msg');
-      el.textContent  = text;
-      el.style.color  = success ? '#4ade80' : '#ff5c5c';
-      el.style.display = 'block';
-    }
+ function showCodeMsg(text, success) {
+ const el = document.getElementById('code-msg');
+ el.textContent = text;
+ el.style.color = success ? '#4ade80' : '#ff5c5c';
+ el.style.display = 'block';
+ }
 
-    async function startUpgrade(e) {
-      e.preventDefault();
-      try {
-        const res  = await fetch('/api/auth/me');
-        const data = await res.json();
-        const email = data.user?.email || '';
-        const r = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tier: 'beta', email }),
-        });
-        const d = await r.json();
-        if (d.redirect) window.location.href = d.redirect;
-        else window.location.href = '/dashboard';
-      } catch (err) {
-        window.location.href = '/dashboard';
-      }
-    }
+ async function startUpgrade(e) {
+ e.preventDefault();
+ try {
+ const res = await fetch('/api/auth/me');
+ const data = await res.json();
+ const email = data.user?.email || '';
+ const r = await fetch('/api/checkout', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ tier: 'beta', email }),
+ });
+ const d = await r.json();
+ if (d.redirect) window.location.href = d.redirect;
+ else window.location.href = '/dashboard';
+ } catch (err) {
+ window.location.href = '/dashboard';
+ }
+ }
 
-    async function logout() {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/login';
-    }
-  </script>
+ async function logout() {
+ await fetch('/api/auth/logout', { method: 'POST' });
+ window.location.href = '/login';
+ }
+ </script>
 </body>
 </html>

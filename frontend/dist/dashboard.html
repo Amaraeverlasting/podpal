@@ -1,254 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodPal - Dashboard</title>
-  <style>
-    :root {
-      --bg:#0a0a0f;--surface:#13131a;--surface2:#1a1a24;
-      --border:rgba(255,255,255,0.07);--accent:#7c6df0;
-      --accent2:#4ecdc4;--text:#e8e8f0;--muted:#6b7280;--green:#4ade80;
-    }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-    nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:50;}
-    .nav-logo{font-size:18px;font-weight:800;color:var(--text);text-decoration:none;}
-    .nav-logo span{color:var(--accent2);}
-    .nav-links{display:flex;gap:20px;}
-    .nav-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.15s;}
-    .nav-links a:hover,.nav-links a.active{color:var(--text);}
-    .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-    .tier-badge{background:rgba(107,114,128,0.15);color:var(--muted);border:1px solid rgba(107,114,128,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
-    .tier-badge.beta{background:rgba(78,205,196,0.1);color:var(--accent2);border-color:rgba(78,205,196,0.3);}
-    .tier-badge.pro{background:rgba(124,109,240,0.15);color:var(--accent);border-color:rgba(124,109,240,0.3);}
-    .main{max-width:960px;margin:0 auto;padding:32px 24px;}
-    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
-    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;}
-    .stat-val{font-size:28px;font-weight:800;color:var(--accent);margin-bottom:4px;}
-    .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
-    .section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
-    .section-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text);}
-    .progress-row{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
-    .progress-item label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px;}
-    .progress-track{height:6px;background:var(--surface2);border-radius:6px;overflow:hidden;}
-    .progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width 0.5s;}
-    .progress-fill.warn{background:#f0a040;}
-    .progress-fill.danger{background:#ff5c5c;}
-    .upgrade-cta{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:background 0.15s;margin-top:4px;}
-    .upgrade-cta:hover{background:#6a5de0;}
-    .compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
-    .compare-col{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;}
-    .compare-col.highlight{border-color:rgba(124,109,240,0.4);background:rgba(124,109,240,0.05);}
-    .compare-col h4{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
-    .compare-col ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
-    .compare-col li{font-size:12px;color:var(--muted);display:flex;gap:8px;}
-    .compare-col li span.check{color:var(--green);}
-    .compare-col li span.cross{color:#ff5c5c;}
-    .session-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
-    .session-item:last-child{border-bottom:none;}
-    .session-info{flex:1;}
-    .session-guest{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
-    .session-meta-row{font-size:12px;color:var(--muted);}
-    .btn-view{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
-    .btn-view:hover{border-color:var(--accent);color:var(--accent);}
-    .quick-actions{display:flex;gap:12px;flex-wrap:wrap;}
-    .qa-btn{flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;text-decoration:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;}
-    .qa-btn:hover{border-color:var(--accent);color:var(--accent);}
-    .qa-btn .qa-icon{font-size:22px;margin-bottom:8px;display:block;}
-    .empty{text-align:center;padding:40px 24px;color:var(--muted);font-size:14px;}
-    .loading{text-align:center;padding:80px 24px;color:var(--muted);font-size:14px;}
-    @media(max-width:640px){
-      .stats-row{grid-template-columns:1fr 1fr;}
-      .compare{grid-template-columns:1fr;}
-    }
-  </style>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>PodPal - Dashboard</title>
+ <style>
+ :root {
+ --bg:#0a0a0f;--surface:#13131a;--surface2:#1a1a24;
+ --border:rgba(255,255,255,0.07);--accent:#7c6df0;
+ --accent2:#4ecdc4;--text:#e8e8f0;--muted:#6b7280;--green:#4ade80;
+ }
+ *{box-sizing:border-box;margin:0;padding:0;}
+ body{font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+ nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:50;}
+ .nav-logo{font-size:18px;font-weight:800;color:var(--text);text-decoration:none;}
+ .nav-logo span{color:var(--accent2);}
+ .nav-links{display:flex;gap:20px;}
+ .nav-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.15s;}
+ .nav-links a:hover,.nav-links a.active{color:var(--text);}
+ .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+ .tier-badge{background:rgba(107,114,128,0.15);color:var(--muted);border:1px solid rgba(107,114,128,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+ .tier-badge.beta{background:rgba(78,205,196,0.1);color:var(--accent2);border-color:rgba(78,205,196,0.3);}
+ .tier-badge.pro{background:rgba(124,109,240,0.15);color:var(--accent);border-color:rgba(124,109,240,0.3);}
+ .main{max-width:960px;margin:0 auto;padding:32px 24px;}
+ .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+ .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;}
+ .stat-val{font-size:28px;font-weight:800;color:var(--accent);margin-bottom:4px;}
+ .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+ .section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
+ .section-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text);}
+ .progress-row{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
+ .progress-item label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px;}
+ .progress-track{height:6px;background:var(--surface2);border-radius:6px;overflow:hidden;}
+ .progress-fill{height:100%;background:var(--accent);border-radius:6px;transition:width 0.5s;}
+ .progress-fill.warn{background:#f0a040;}
+ .progress-fill.danger{background:#ff5c5c;}
+ .upgrade-cta{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:background 0.15s;margin-top:4px;}
+ .upgrade-cta:hover{background:#6a5de0;}
+ .compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;}
+ .compare-col{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+ .compare-col.highlight{border-color:rgba(124,109,240,0.4);background:rgba(124,109,240,0.05);}
+ .compare-col h4{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text);}
+ .compare-col ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
+ .compare-col li{font-size:12px;color:var(--muted);display:flex;gap:8px;}
+ .compare-col li span.check{color:var(--green);}
+ .compare-col li span.cross{color:#ff5c5c;}
+ .session-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+ .session-item:last-child{border-bottom:none;}
+ .session-info{flex:1;}
+ .session-guest{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
+ .session-meta-row{font-size:12px;color:var(--muted);}
+ .btn-view{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;transition:all 0.15s;}
+ .btn-view:hover{border-color:var(--accent);color:var(--accent);}
+ .quick-actions{display:flex;gap:12px;flex-wrap:wrap;}
+ .qa-btn{flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;text-decoration:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+ .qa-btn:hover{border-color:var(--accent);color:var(--accent);}
+ .qa-btn .qa-icon{font-size:22px;margin-bottom:8px;display:block;}
+ .empty{text-align:center;padding:40px 24px;color:var(--muted);font-size:14px;}
+ .loading{text-align:center;padding:80px 24px;color:var(--muted);font-size:14px;}
+ @media(max-width:640px){
+ .stats-row{grid-template-columns:1fr 1fr;}
+ .compare{grid-template-columns:1fr;}
+ }
+ </style>
 </head>
 <body>
-  <nav>
-    <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
-    <div class="nav-links">
-      <a href="/dashboard" class="active">Dashboard</a>
-      <a href="/app">App</a>
-      <a href="/profile">Profile</a>
-    </div>
-    <div class="nav-right">
-      <span class="tier-badge" id="tier-badge"></span>
-      <span style="font-size:12px;color:var(--muted)" id="user-email"></span>
-      <a href="#" onclick="logout()" style="font-size:12px;color:var(--muted);text-decoration:none;">Logout</a>
-    </div>
-  </nav>
+ <nav>
+ <a href="/app" class="nav-logo">Pod<span>Pal</span></a>
+ <div class="nav-links">
+ <a href="/dashboard" class="active">Dashboard</a>
+ <a href="/app">App</a>
+ <a href="/profile">Profile</a>
+ </div>
+ <div class="nav-right">
+ <span class="tier-badge" id="tier-badge"></span>
+ <span style="font-size:12px;color:var(--muted)" id="user-email"></span>
+ <a href="#" onclick="logout()" style="font-size:12px;color:var(--muted);text-decoration:none;">Logout</a>
+ </div>
+ </nav>
 
-  <div class="main" id="main"><div class="loading">Loading...</div></div>
+ <div class="main" id="main"><div class="loading">Loading...</div></div>
 
-  <script>
-    let dashData = null;
+ <script>
+ let dashData = null;
 
-    async function init() {
-      try {
-        const res = await fetch('/api/dashboard');
-        if (res.status === 401) { window.location.href = '/login'; return; }
-        dashData = await res.json();
-        render(dashData);
-      } catch (e) {
-        document.getElementById('main').innerHTML =
-          '<div class="loading">Failed to load. <a href="/login" style="color:var(--accent)">Sign in again</a></div>';
-      }
-    }
+ async function init() {
+ try {
+ const res = await fetch('/api/dashboard');
+ if (res.status === 401) { window.location.href = '/login'; return; }
+ dashData = await res.json();
+ render(dashData);
+ } catch (e) {
+ document.getElementById('main').innerHTML =
+ '<div class="loading">Failed to load. <a href="/login" style="color:var(--accent)">Sign in again</a></div>';
+ }
+ }
 
-    function fmtDur(s) {
-      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-      return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
-    }
+ function fmtDur(s) {
+ const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+ return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+ }
 
-    function render(data) {
-      const { user, sessions, stats, trial_status } = data;
-      const tier = user.tier || 'free';
-      const tierLabel = { free:'Free', beta:'Beta', pro:'Pro', network:'Network' }[tier] || tier;
+ function render(data) {
+ const { user, sessions, stats, trial_status } = data;
+ const tier = user.tier || 'free';
+ const tierLabel = { free:'Free', beta:'Beta', pro:'Pro', network:'Network' }[tier] || tier;
 
-      document.getElementById('user-email').textContent = user.email;
-      const badge = document.getElementById('tier-badge');
-      badge.textContent = tierLabel;
-      badge.className = 'tier-badge ' + tier;
+ document.getElementById('user-email').textContent = user.email;
+ const badge = document.getElementById('tier-badge');
+ badge.textContent = tierLabel;
+ badge.className = 'tier-badge ' + tier;
 
-      const ts = trial_status || {};
-      const isFree = tier === 'free';
+ const ts = trial_status || {};
+ const isFree = tier === 'free';
 
-      // Stats row
-      const statsHtml = `
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-val">${stats.sessions_this_month || 0}</div>
-            <div class="stat-label">Sessions this month</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-val">${fmtDur(stats.total_recording_seconds || 0)}</div>
-            <div class="stat-label">Total recorded</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-val">${stats.show_notes_generated || 0}</div>
-            <div class="stat-label">Show notes</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-val" style="${isFree ? 'color:var(--muted)' : ''}">${tierLabel}</div>
-            <div class="stat-label">Current plan</div>
-          </div>
-        </div>`;
+ // Stats row
+ const statsHtml = `
+ <div class="stats-row">
+ <div class="stat-card">
+ <div class="stat-val">${stats.sessions_this_month || 0}</div>
+ <div class="stat-label">Sessions this month</div>
+ </div>
+ <div class="stat-card">
+ <div class="stat-val">${fmtDur(stats.total_recording_seconds || 0)}</div>
+ <div class="stat-label">Total recorded</div>
+ </div>
+ <div class="stat-card">
+ <div class="stat-val">${stats.show_notes_generated || 0}</div>
+ <div class="stat-label">Show notes</div>
+ </div>
+ <div class="stat-card">
+ <div class="stat-val" style="${isFree ? 'color:var(--muted)' : ''}">${tierLabel}</div>
+ <div class="stat-label">Current plan</div>
+ </div>
+ </div>`;
 
-      // Trial progress (free only)
-      let trialHtml = '';
-      if (isFree && ts) {
-        const sessUsed = ts.sessions_used || 0;
-        const sessPct  = Math.min(100, (sessUsed / 3) * 100);
-        const minUsed  = Math.floor((ts.seconds_used || 0) / 60);
-        const minPct   = Math.min(100, (minUsed / 60) * 100);
-        const daysRem  = ts.days_remaining !== undefined ? ts.days_remaining : 7;
-        const daysPct  = Math.min(100, ((7 - daysRem) / 7) * 100);
-        const sessClass = sessPct >= 66 ? 'danger' : sessPct >= 33 ? 'warn' : '';
-        trialHtml = `
-          <div class="section">
-            <div class="section-title">Your trial</div>
-            <div class="progress-row">
-              <div class="progress-item">
-                <label><span>Sessions</span><span>${sessUsed} of 3 used</span></label>
-                <div class="progress-track"><div class="progress-fill ${sessClass}" style="width:${sessPct}%"></div></div>
-              </div>
-              <div class="progress-item">
-                <label><span>Days remaining</span><span>${daysRem} of 7 days left</span></label>
-                <div class="progress-track"><div class="progress-fill ${daysPct >= 85 ? 'warn' : ''}" style="width:${daysPct}%"></div></div>
-              </div>
-              <div class="progress-item">
-                <label><span>Minutes used</span><span>${minUsed} of 60 min</span></label>
-                <div class="progress-track"><div class="progress-fill ${minPct >= 75 ? 'warn' : ''}" style="width:${minPct}%"></div></div>
-              </div>
-            </div>
-            <a href="#" onclick="startUpgrade(event)" class="upgrade-cta">Upgrade to Beta - $19/mo - keep everything</a>
-          </div>
-          <div class="section">
-            <div class="section-title">What you unlock with Beta</div>
-            <div class="compare">
-              <div class="compare-col">
-                <h4>Free trial</h4>
-                <ul>
-                  <li><span class="check">✓</span>3 sessions</li>
-                  <li><span class="check">✓</span>Live research cards</li>
-                  <li><span class="cross">✗</span>Guest intel pre-load</li>
-                  <li><span class="cross">✗</span>Show notes export</li>
-                  <li><span class="cross">✗</span>Question suggester</li>
-                  <li><span class="cross">✗</span>Priority support</li>
-                </ul>
-              </div>
-              <div class="compare-col highlight">
-                <h4 style="color:var(--accent)">Beta - $19/mo</h4>
-                <ul>
-                  <li><span class="check">✓</span>Unlimited sessions</li>
-                  <li><span class="check">✓</span>Live research cards</li>
-                  <li><span class="check">✓</span>Guest intel pre-load</li>
-                  <li><span class="check">✓</span>Show notes export</li>
-                  <li><span class="check">✓</span>Question suggester</li>
-                  <li><span class="check">✓</span>Priority support</li>
-                </ul>
-              </div>
-            </div>
-          </div>`;
-      }
+ // Trial progress (free only)
+ let trialHtml = '';
+ if (isFree && ts) {
+ const sessUsed = ts.sessions_used || 0;
+ const sessPct = Math.min(100, (sessUsed / 3) * 100);
+ const minUsed = Math.floor((ts.seconds_used || 0) / 60);
+ const minPct = Math.min(100, (minUsed / 60) * 100);
+ const daysRem = ts.days_remaining !== undefined ? ts.days_remaining : 7;
+ const daysPct = Math.min(100, ((7 - daysRem) / 7) * 100);
+ const sessClass = sessPct >= 66 ? 'danger' : sessPct >= 33 ? 'warn' : '';
+ trialHtml = `
+ <div class="section">
+ <div class="section-title">Your trial</div>
+ <div class="progress-row">
+ <div class="progress-item">
+ <label><span>Sessions</span><span>${sessUsed} of 3 used</span></label>
+ <div class="progress-track"><div class="progress-fill ${sessClass}" style="width:${sessPct}%"></div></div>
+ </div>
+ <div class="progress-item">
+ <label><span>Days remaining</span><span>${daysRem} of 7 days left</span></label>
+ <div class="progress-track"><div class="progress-fill ${daysPct >= 85 ? 'warn' : ''}" style="width:${daysPct}%"></div></div>
+ </div>
+ <div class="progress-item">
+ <label><span>Minutes used</span><span>${minUsed} of 60 min</span></label>
+ <div class="progress-track"><div class="progress-fill ${minPct >= 75 ? 'warn' : ''}" style="width:${minPct}%"></div></div>
+ </div>
+ </div>
+ <a href="#" onclick="startUpgrade(event)" class="upgrade-cta">Upgrade to Beta - $19/mo - keep everything</a>
+ </div>
+ <div class="section">
+ <div class="section-title">What you unlock with Beta</div>
+ <div class="compare">
+ <div class="compare-col">
+ <h4>Free trial</h4>
+ <ul>
+ <li><span class="check"></span>3 sessions</li>
+ <li><span class="check"></span>Live research cards</li>
+ <li><span class="cross"></span>Guest intel pre-load</li>
+ <li><span class="cross"></span>Show notes export</li>
+ <li><span class="cross"></span>Question suggester</li>
+ <li><span class="cross"></span>Priority support</li>
+ </ul>
+ </div>
+ <div class="compare-col highlight">
+ <h4 style="color:var(--accent)">Beta - $19/mo</h4>
+ <ul>
+ <li><span class="check"></span>Unlimited sessions</li>
+ <li><span class="check"></span>Live research cards</li>
+ <li><span class="check"></span>Guest intel pre-load</li>
+ <li><span class="check"></span>Show notes export</li>
+ <li><span class="check"></span>Question suggester</li>
+ <li><span class="check"></span>Priority support</li>
+ </ul>
+ </div>
+ </div>
+ </div>`;
+ }
 
-      // Recent sessions
-      const sessionsHtml = sessions && sessions.length > 0
-        ? sessions.slice(0, 5).map(s => `
-            <div class="session-item">
-              <div class="session-info">
-                <div class="session-guest">${s.guest || 'Unknown guest'}</div>
-                <div class="session-meta-row">${s.date || ''} &middot; ${fmtDur(s.duration_seconds || 0)}</div>
-              </div>
-              <a href="/session?id=${s.session_id}" class="btn-view">View session</a>
-            </div>`).join('')
-        : '<div class="empty">No recordings yet. <a href="/app" style="color:var(--accent)">Start your first session</a></div>';
+ // Recent sessions
+ const sessionsHtml = sessions && sessions.length > 0
+ ? sessions.slice(0, 5).map(s => `
+ <div class="session-item">
+ <div class="session-info">
+ <div class="session-guest">${s.guest || 'Unknown guest'}</div>
+ <div class="session-meta-row">${s.date || ''} &middot; ${fmtDur(s.duration_seconds || 0)}</div>
+ </div>
+ <a href="/session?id=${s.session_id}" class="btn-view">View session</a>
+ </div>`).join('')
+ : '<div class="empty">No recordings yet. <a href="/app" style="color:var(--accent)">Start your first session</a></div>';
 
-      // Quick actions
-      const upgradeAction = isFree
-        ? `<a href="#" onclick="startUpgrade(event)" class="qa-btn"><span class="qa-icon">⚡</span>Upgrade - $19/mo</a>`
-        : '';
+ // Quick actions
+ const upgradeAction = isFree
+ ? `<a href="#" onclick="startUpgrade(event)" class="qa-btn"><span class="qa-icon"></span>Upgrade - $19/mo</a>`
+ : '';
 
-      document.getElementById('main').innerHTML = `
-        ${statsHtml}
-        ${trialHtml}
-        <div class="section">
-          <div class="section-title">Recent sessions</div>
-          ${sessionsHtml}
-        </div>
-        <div class="section">
-          <div class="section-title">Quick actions</div>
-          <div class="quick-actions">
-            <a href="/app" class="qa-btn"><span class="qa-icon">🎙</span>Start new session</a>
-            <a href="/profile" class="qa-btn"><span class="qa-icon">👤</span>View profile</a>
-            ${upgradeAction}
-          </div>
-        </div>`;
-    }
+ document.getElementById('main').innerHTML = `
+ ${statsHtml}
+ ${trialHtml}
+ <div class="section">
+ <div class="section-title">Recent sessions</div>
+ ${sessionsHtml}
+ </div>
+ <div class="section">
+ <div class="section-title">Quick actions</div>
+ <div class="quick-actions">
+ <a href="/app" class="qa-btn"><span class="qa-icon"></span>Start new session</a>
+ <a href="/profile" class="qa-btn"><span class="qa-icon"></span>View profile</a>
+ ${upgradeAction}
+ </div>
+ </div>`;
+ }
 
-    async function startUpgrade(e) {
-      if (e) e.preventDefault();
-      const email = dashData?.user?.email || '';
-      try {
-        const res = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tier: 'beta', email }),
-        });
-        const d = await res.json();
-        if (d.redirect) window.location.href = d.redirect;
-      } catch (_) {
-        alert('Could not start checkout. Please try again.');
-      }
-    }
+ async function startUpgrade(e) {
+ if (e) e.preventDefault();
+ const email = dashData?.user?.email || '';
+ try {
+ const res = await fetch('/api/checkout', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ tier: 'beta', email }),
+ });
+ const d = await res.json();
+ if (d.redirect) window.location.href = d.redirect;
+ } catch (_) {
+ alert('Could not start checkout. Please try again.');
+ }
+ }
 
-    async function logout() {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/login';
-    }
+ async function logout() {
+ await fetch('/api/auth/logout', { method: 'POST' });
+ window.location.href = '/login';
+ }
 
-    init();
-  </script>
+ init();
+ </script>
 </body>
 </html>

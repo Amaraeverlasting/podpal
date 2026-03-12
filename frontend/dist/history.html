@@ -1,440 +1,440 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodPal — Session History</title>
-  <style>
-    :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --surface2: #1a1a24;
-      --border: rgba(255,255,255,0.07);
-      --accent: #7c6df0;
-      --accent2: #4ecdc4;
-      --gold: #f0c040;
-      --red: #ff5c5c;
-      --green: #4ade80;
-      --text: #e8e8f0;
-      --muted: #6b7280;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>PodPal — Session History</title>
+ <style>
+ :root {
+ --bg: #0a0a0f;
+ --surface: #13131a;
+ --surface2: #1a1a24;
+ --border: rgba(255,255,255,0.07);
+ --accent: #7c6df0;
+ --accent2: #4ecdc4;
+ --gold: #f0c040;
+ --red: #ff5c5c;
+ --green: #4ade80;
+ --text: #e8e8f0;
+ --muted: #6b7280;
+ }
+ * { box-sizing: border-box; margin: 0; padding: 0; }
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+ background: var(--bg);
+ color: var(--text);
+ min-height: 100vh;
+ }
 
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      height: 56px;
-      gap: 16px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
-    .logo span { color: var(--accent2); }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .btn {
-      padding: 7px 14px; border-radius: 8px; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-      text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #6a5de0; }
-    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn-outline:hover { background: var(--surface2); }
-    .btn-small { padding: 5px 10px; font-size: 12px; }
+ header {
+ background: var(--surface);
+ border-bottom: 1px solid var(--border);
+ display: flex;
+ align-items: center;
+ padding: 0 24px;
+ height: 56px;
+ gap: 16px;
+ position: sticky;
+ top: 0;
+ z-index: 10;
+ }
+ .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
+ .logo span { color: var(--accent2); }
+ .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+ .btn {
+ padding: 7px 14px; border-radius: 8px; border: none;
+ font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+ text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+ }
+ .btn-primary { background: var(--accent); color: white; }
+ .btn-primary:hover { background: #6a5de0; }
+ .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+ .btn-outline:hover { background: var(--surface2); }
+ .btn-small { padding: 5px 10px; font-size: 12px; }
 
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 32px 24px;
-    }
+ main {
+ max-width: 900px;
+ margin: 0 auto;
+ padding: 32px 24px;
+ }
 
-    .page-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+ .page-title {
+ font-size: 28px;
+ font-weight: 700;
+ margin-bottom: 6px;
+ }
+ .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
 
-    .sessions-grid { display: flex; flex-direction: column; gap: 12px; }
+ .sessions-grid { display: flex; flex-direction: column; gap: 12px; }
 
-    .session-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .session-card:hover { border-color: rgba(124,109,240,0.3); }
+ .session-card {
+ background: var(--surface);
+ border: 1px solid var(--border);
+ border-radius: 14px;
+ overflow: hidden;
+ transition: border-color 0.2s;
+ }
+ .session-card:hover { border-color: rgba(124,109,240,0.3); }
 
-    .session-header {
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-    }
-    .session-avatar {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      background: rgba(124,109,240,0.15);
-      border: 1px solid rgba(124,109,240,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .session-meta { flex: 1; min-width: 0; }
-    .session-guest { font-size: 15px; font-weight: 600; }
-    .session-show { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .session-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .badge {
-      font-size: 11px;
-      padding: 3px 9px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-    .badge-purple { background: rgba(124,109,240,0.15); color: var(--accent); }
-    .badge-teal { background: rgba(78,205,196,0.15); color: var(--accent2); }
-    .badge-gold { background: rgba(240,192,64,0.15); color: var(--gold); }
-    .badge-red { background: rgba(255,92,92,0.15); color: var(--red); }
-    .badge-muted { background: var(--surface2); color: var(--muted); }
-    .session-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .session-actions { display: flex; gap: 8px; }
-    .expand-btn {
-      background: none; border: none; color: var(--muted);
-      font-size: 16px; cursor: pointer; padding: 4px;
-      transition: transform 0.2s;
-    }
-    .expand-btn.open { transform: rotate(180deg); }
+ .session-header {
+ padding: 16px 20px;
+ display: flex;
+ align-items: center;
+ gap: 14px;
+ cursor: pointer;
+ }
+ .session-avatar {
+ width: 40px; height: 40px;
+ border-radius: 10px;
+ background: rgba(124,109,240,0.15);
+ border: 1px solid rgba(124,109,240,0.3);
+ display: flex; align-items: center; justify-content: center;
+ font-size: 18px;
+ flex-shrink: 0;
+ }
+ .session-meta { flex: 1; min-width: 0; }
+ .session-guest { font-size: 15px; font-weight: 600; }
+ .session-show { font-size: 12px; color: var(--muted); margin-top: 2px; }
+ .session-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+ .badge {
+ font-size: 11px;
+ padding: 3px 9px;
+ border-radius: 10px;
+ font-weight: 600;
+ }
+ .badge-purple { background: rgba(124,109,240,0.15); color: var(--accent); }
+ .badge-teal { background: rgba(78,205,196,0.15); color: var(--accent2); }
+ .badge-gold { background: rgba(240,192,64,0.15); color: var(--gold); }
+ .badge-red { background: rgba(255,92,92,0.15); color: var(--red); }
+ .badge-muted { background: var(--surface2); color: var(--muted); }
+ .session-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+ .session-actions { display: flex; gap: 8px; }
+ .expand-btn {
+ background: none; border: none; color: var(--muted);
+ font-size: 16px; cursor: pointer; padding: 4px;
+ transition: transform 0.2s;
+ }
+ .expand-btn.open { transform: rotate(180deg); }
 
-    .session-body {
-      border-top: 1px solid var(--border);
-      padding: 20px;
-      display: none;
-    }
-    .session-body.open { display: block; }
+ .session-body {
+ border-top: 1px solid var(--border);
+ padding: 20px;
+ display: none;
+ }
+ .session-body.open { display: block; }
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+ .detail-grid {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 16px;
+ margin-bottom: 16px;
+ }
+ @media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
 
-    .detail-block {
-      background: var(--bg);
-      border-radius: 10px;
-      padding: 14px;
-    }
-    .detail-block h4 {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .detail-block ul { padding-left: 16px; }
-    .detail-block li { font-size: 13px; line-height: 1.6; margin-bottom: 4px; }
-    .detail-block p { font-size: 13px; line-height: 1.6; }
+ .detail-block {
+ background: var(--bg);
+ border-radius: 10px;
+ padding: 14px;
+ }
+ .detail-block h4 {
+ font-size: 10px;
+ text-transform: uppercase;
+ letter-spacing: 0.6px;
+ color: var(--muted);
+ margin-bottom: 10px;
+ }
+ .detail-block ul { padding-left: 16px; }
+ .detail-block li { font-size: 13px; line-height: 1.6; margin-bottom: 4px; }
+ .detail-block p { font-size: 13px; line-height: 1.6; }
 
-    .topics-list { display: flex; flex-wrap: wrap; gap: 6px; }
-    .topic-tag {
-      background: rgba(124,109,240,0.1);
-      border: 1px solid rgba(124,109,240,0.2);
-      color: var(--accent);
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-    }
+ .topics-list { display: flex; flex-wrap: wrap; gap: 6px; }
+ .topic-tag {
+ background: rgba(124,109,240,0.1);
+ border: 1px solid rgba(124,109,240,0.2);
+ color: var(--accent);
+ padding: 3px 10px;
+ border-radius: 12px;
+ font-size: 12px;
+ }
 
-    .research-item {
-      background: var(--bg);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 8px;
-      border-left: 3px solid var(--accent2);
-    }
-    .research-item h5 { font-size: 11px; color: var(--accent2); margin-bottom: 6px; font-weight: 600; }
-    .research-item p { font-size: 12px; line-height: 1.6; color: rgba(232,232,240,0.8); white-space: pre-wrap; }
+ .research-item {
+ background: var(--bg);
+ border-radius: 8px;
+ padding: 12px;
+ margin-bottom: 8px;
+ border-left: 3px solid var(--accent2);
+ }
+ .research-item h5 { font-size: 11px; color: var(--accent2); margin-bottom: 6px; font-weight: 600; }
+ .research-item p { font-size: 12px; line-height: 1.6; color: rgba(232,232,240,0.8); white-space: pre-wrap; }
 
-    .fact-item {
-      background: rgba(255,92,92,0.05);
-      border: 1px solid rgba(255,92,92,0.2);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-    }
-    .fact-item .claim { font-size: 11px; color: var(--red); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
-    .fact-item .result { font-size: 12px; line-height: 1.5; }
+ .fact-item {
+ background: rgba(255,92,92,0.05);
+ border: 1px solid rgba(255,92,92,0.2);
+ border-radius: 8px;
+ padding: 10px 12px;
+ margin-bottom: 8px;
+ }
+ .fact-item .claim { font-size: 11px; color: var(--red); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+ .fact-item .result { font-size: 12px; line-height: 1.5; }
 
-    .session-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border);
-    }
+ .session-footer {
+ display: flex;
+ justify-content: flex-end;
+ gap: 8px;
+ margin-top: 16px;
+ padding-top: 14px;
+ border-top: 1px solid var(--border);
+ }
 
-    .empty-state {
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--muted);
-    }
-    .empty-state h3 { font-size: 20px; margin-bottom: 10px; color: var(--text); }
-    .empty-state p { font-size: 14px; margin-bottom: 24px; }
+ .empty-state {
+ text-align: center;
+ padding: 80px 20px;
+ color: var(--muted);
+ }
+ .empty-state h3 { font-size: 20px; margin-bottom: 10px; color: var(--text); }
+ .empty-state p { font-size: 14px; margin-bottom: 24px; }
 
-    .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
-    .spinner { width: 20px; height: 20px; border: 2px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+ .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
+ .spinner { width: 20px; height: 20px; border: 2px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
+ @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Print styles for PDF export */
-    @media print {
-      header { display: none; }
-      .session-actions, .expand-btn, .session-footer { display: none !important; }
-      .session-body { display: block !important; }
-      .session-card { break-inside: avoid; border: 1px solid #ccc; margin-bottom: 20px; }
-      body { background: white; color: black; }
-    }
-  </style>
+ /* Print styles for PDF export */
+ @media print {
+ header { display: none; }
+ .session-actions, .expand-btn, .session-footer { display: none !important; }
+ .session-body { display: block !important; }
+ .session-card { break-inside: avoid; border: 1px solid #ccc; margin-bottom: 20px; }
+ body { background: white; color: black; }
+ }
+ </style>
 </head>
 <body>
-  <header>
-    <a href="/app" class="logo">Pod<span>Pal</span></a>
-    <span style="color:var(--muted);font-size:13px;">/ Session History</span>
-    <div class="header-right">
-      <a href="/app" class="btn btn-primary">🎙 Open App</a>
-    </div>
-  </header>
+ <header>
+ <a href="/app" class="logo">Pod<span>Pal</span></a>
+ <span style="color:var(--muted);font-size:13px;">/ Session History</span>
+ <div class="header-right">
+ <a href="/app" class="btn btn-primary"> Open App</a>
+ </div>
+ </header>
 
-  <main>
-    <h1 class="page-title">📋 Session History</h1>
-    <p class="page-sub">All your past recording sessions, saved automatically when you stop listening.</p>
+ <main>
+ <h1 class="page-title"> Session History</h1>
+ <p class="page-sub">All your past recording sessions, saved automatically when you stop listening.</p>
 
-    <div id="sessions-container">
-      <div class="loading"><span class="spinner"></span>Loading sessions...</div>
-    </div>
-  </main>
+ <div id="sessions-container">
+ <div class="loading"><span class="spinner"></span>Loading sessions...</div>
+ </div>
+ </main>
 
-  <script>
-    async function loadSessions() {
-      const container = document.getElementById('sessions-container');
-      try {
-        const resp = await fetch('/api/sessions');
-        const sessions = await resp.json();
+ <script>
+ async function loadSessions() {
+ const container = document.getElementById('sessions-container');
+ try {
+ const resp = await fetch('/api/sessions');
+ const sessions = await resp.json();
 
-        if (!sessions.length) {
-          container.innerHTML = `
-            <div class="empty-state">
-              <h3>No sessions yet</h3>
-              <p>Start a recording session in the app — it will appear here when you stop.</p>
-              <a href="/app" class="btn btn-primary">🎙 Start Recording</a>
-            </div>`;
-          return;
-        }
+ if (!sessions.length) {
+ container.innerHTML = `
+ <div class="empty-state">
+ <h3>No sessions yet</h3>
+ <p>Start a recording session in the app — it will appear here when you stop.</p>
+ <a href="/app" class="btn btn-primary"> Start Recording</a>
+ </div>`;
+ return;
+ }
 
-        container.innerHTML = `<div class="sessions-grid">${sessions.map(renderSessionCard).join('')}</div>`;
-      } catch (e) {
-        container.innerHTML = `<div class="empty-state"><h3>Could not load sessions</h3><p>${e.message}</p></div>`;
-      }
-    }
+ container.innerHTML = `<div class="sessions-grid">${sessions.map(renderSessionCard).join('')}</div>`;
+ } catch (e) {
+ container.innerHTML = `<div class="empty-state"><h3>Could not load sessions</h3><p>${e.message}</p></div>`;
+ }
+ }
 
-    function formatDuration(secs) {
-      if (!secs) return '—';
-      const m = Math.floor(secs / 60), s = secs % 60;
-      return `${m}m ${s}s`;
-    }
+ function formatDuration(secs) {
+ if (!secs) return '—';
+ const m = Math.floor(secs / 60), s = secs % 60;
+ return `${m}m ${s}s`;
+ }
 
-    function formatDate(ts) {
-      if (!ts) return '—';
-      return new Date(ts * 1000).toLocaleDateString('en-ZA', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      });
-    }
+ function formatDate(ts) {
+ if (!ts) return '—';
+ return new Date(ts * 1000).toLocaleDateString('en-ZA', {
+ year: 'numeric', month: 'short', day: 'numeric',
+ hour: '2-digit', minute: '2-digit'
+ });
+ }
 
-    function renderSessionCard(s) {
-      const meta = s.metadata || {};
-      const guest = meta.guest || 'Unknown Guest';
-      const show = meta.show || 'Untitled Show';
-      const date = formatDate(s.start_time);
-      const dur = formatDuration(s.duration_seconds);
-      const id = s.file;
+ function renderSessionCard(s) {
+ const meta = s.metadata || {};
+ const guest = meta.guest || 'Unknown Guest';
+ const show = meta.show || 'Untitled Show';
+ const date = formatDate(s.start_time);
+ const dur = formatDuration(s.duration_seconds);
+ const id = s.file;
 
-      return `
-        <div class="session-card" id="card-${btoa(id).replace(/=/g,'')}">
-          <div class="session-header" onclick="toggleSession('${id}')">
-            <div class="session-avatar">🎙</div>
-            <div class="session-meta">
-              <div class="session-guest">${escHtml(guest)}</div>
-              <div class="session-show">${escHtml(show)}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-              <div class="session-date">${date} · ${dur}</div>
-              <div class="session-badges">
-                ${s.topics_count > 0 ? `<span class="badge badge-purple">${s.topics_count} topics</span>` : ''}
-                ${s.research_count > 0 ? `<span class="badge badge-teal">${s.research_count} research</span>` : ''}
-                ${s.questions_count > 0 ? `<span class="badge badge-gold">${s.questions_count} questions</span>` : ''}
-                ${s.fact_checks_count > 0 ? `<span class="badge badge-red">${s.fact_checks_count} fact-checks</span>` : ''}
-              </div>
-            </div>
-            <button class="expand-btn" id="expand-${btoa(id).replace(/=/g,'')}">▼</button>
-          </div>
-          <div class="session-body" id="body-${btoa(id).replace(/=/g,'')}">
-            <div class="loading"><span class="spinner"></span>Loading details...</div>
-          </div>
-        </div>`;
-    }
+ return `
+ <div class="session-card" id="card-${btoa(id).replace(/=/g,'')}">
+ <div class="session-header" onclick="toggleSession('${id}')">
+ <div class="session-avatar"></div>
+ <div class="session-meta">
+ <div class="session-guest">${escHtml(guest)}</div>
+ <div class="session-show">${escHtml(show)}</div>
+ </div>
+ <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+ <div class="session-date">${date} · ${dur}</div>
+ <div class="session-badges">
+ ${s.topics_count > 0 ? `<span class="badge badge-purple">${s.topics_count} topics</span>` : ''}
+ ${s.research_count > 0 ? `<span class="badge badge-teal">${s.research_count} research</span>` : ''}
+ ${s.questions_count > 0 ? `<span class="badge badge-gold">${s.questions_count} questions</span>` : ''}
+ ${s.fact_checks_count > 0 ? `<span class="badge badge-red">${s.fact_checks_count} fact-checks</span>` : ''}
+ </div>
+ </div>
+ <button class="expand-btn" id="expand-${btoa(id).replace(/=/g,'')}"></button>
+ </div>
+ <div class="session-body" id="body-${btoa(id).replace(/=/g,'')}">
+ <div class="loading"><span class="spinner"></span>Loading details...</div>
+ </div>
+ </div>`;
+ }
 
-    const openSessions = new Set();
+ const openSessions = new Set();
 
-    async function toggleSession(fileId) {
-      const safeId = btoa(fileId).replace(/=/g, '');
-      const body = document.getElementById(`body-${safeId}`);
-      const btn = document.getElementById(`expand-${safeId}`);
+ async function toggleSession(fileId) {
+ const safeId = btoa(fileId).replace(/=/g, '');
+ const body = document.getElementById(`body-${safeId}`);
+ const btn = document.getElementById(`expand-${safeId}`);
 
-      if (openSessions.has(fileId)) {
-        openSessions.delete(fileId);
-        body.classList.remove('open');
-        btn.classList.remove('open');
-        return;
-      }
+ if (openSessions.has(fileId)) {
+ openSessions.delete(fileId);
+ body.classList.remove('open');
+ btn.classList.remove('open');
+ return;
+ }
 
-      openSessions.add(fileId);
-      body.classList.add('open');
-      btn.classList.add('open');
+ openSessions.add(fileId);
+ body.classList.add('open');
+ btn.classList.add('open');
 
-      // Load full data if not already done
-      if (body.querySelector('.loading')) {
-        try {
-          const resp = await fetch(`/api/sessions/${encodeURIComponent(fileId)}`);
-          const data = await resp.json();
-          body.innerHTML = renderSessionBody(data, fileId);
-        } catch (e) {
-          body.innerHTML = `<p style="color:var(--red);padding:16px;">Failed to load: ${e.message}</p>`;
-        }
-      }
-    }
+ // Load full data if not already done
+ if (body.querySelector('.loading')) {
+ try {
+ const resp = await fetch(`/api/sessions/${encodeURIComponent(fileId)}`);
+ const data = await resp.json();
+ body.innerHTML = renderSessionBody(data, fileId);
+ } catch (e) {
+ body.innerHTML = `<p style="color:var(--red);padding:16px;">Failed to load: ${e.message}</p>`;
+ }
+ }
+ }
 
-    function renderSessionBody(data, fileId) {
-      const topics = data.topics_detected || [];
-      const research = data.research_cards || [];
-      const factChecks = data.fact_check_alerts || [];
-      const questions = data.suggested_questions || [];
-      const snippets = data.transcript_snippets || [];
-      const sid = data.session_id || '';
+ function renderSessionBody(data, fileId) {
+ const topics = data.topics_detected || [];
+ const research = data.research_cards || [];
+ const factChecks = data.fact_check_alerts || [];
+ const questions = data.suggested_questions || [];
+ const snippets = data.transcript_snippets || [];
+ const sid = data.session_id || '';
 
-      const topicsHtml = topics.length
-        ? `<div class="topics-list">${topics.map(t => `<span class="topic-tag">${escHtml(t)}</span>`).join('')}</div>`
-        : '<p style="color:var(--muted);font-size:13px;">No topics detected</p>';
+ const topicsHtml = topics.length
+ ? `<div class="topics-list">${topics.map(t => `<span class="topic-tag">${escHtml(t)}</span>`).join('')}</div>`
+ : '<p style="color:var(--muted);font-size:13px;">No topics detected</p>';
 
-      const questionsHtml = questions.length
-        ? `<ul>${questions.slice(0,6).map(q => `<li>${escHtml(q)}</li>`).join('')}</ul>`
-        : '<p style="color:var(--muted);font-size:13px;">No questions recorded</p>';
+ const questionsHtml = questions.length
+ ? `<ul>${questions.slice(0,6).map(q => `<li>${escHtml(q)}</li>`).join('')}</ul>`
+ : '<p style="color:var(--muted);font-size:13px;">No questions recorded</p>';
 
-      const researchHtml = research.length
-        ? research.slice(0,3).map(c => `
-            <div class="research-item">
-              <h5>${escHtml(c.topic || '')} · ${escHtml(c.source || '')}</h5>
-              <p>${escHtml(c.research || '')}</p>
-            </div>`).join('')
-        : '<p style="color:var(--muted);font-size:13px;">No research cards</p>';
+ const researchHtml = research.length
+ ? research.slice(0,3).map(c => `
+ <div class="research-item">
+ <h5>${escHtml(c.topic || '')} · ${escHtml(c.source || '')}</h5>
+ <p>${escHtml(c.research || '')}</p>
+ </div>`).join('')
+ : '<p style="color:var(--muted);font-size:13px;">No research cards</p>';
 
-      const factsHtml = factChecks.length
-        ? factChecks.map(fc => `
-            <div class="fact-item">
-              <div class="claim">⚠ ${escHtml(fc.claim || '')}</div>
-              <div class="result">${escHtml(fc.result || '')}</div>
-            </div>`).join('')
-        : '<p style="color:var(--muted);font-size:13px;">No fact-checks triggered</p>';
+ const factsHtml = factChecks.length
+ ? factChecks.map(fc => `
+ <div class="fact-item">
+ <div class="claim"> ${escHtml(fc.claim || '')}</div>
+ <div class="result">${escHtml(fc.result || '')}</div>
+ </div>`).join('')
+ : '<p style="color:var(--muted);font-size:13px;">No fact-checks triggered</p>';
 
-      const transcriptHtml = snippets.length
-        ? `<p style="font-size:13px;line-height:1.8;color:rgba(232,232,240,0.7);font-family:Georgia,serif;">${snippets.map(escHtml).join(' … ')}</p>`
-        : '<p style="color:var(--muted);font-size:13px;">No transcript available</p>';
+ const transcriptHtml = snippets.length
+ ? `<p style="font-size:13px;line-height:1.8;color:rgba(232,232,240,0.7);font-family:Georgia,serif;">${snippets.map(escHtml).join(' … ')}</p>`
+ : '<p style="color:var(--muted);font-size:13px;">No transcript available</p>';
 
-      return `
-        <div class="detail-grid">
-          <div class="detail-block">
-            <h4>🏷 Topics Detected</h4>
-            ${topicsHtml}
-          </div>
-          <div class="detail-block">
-            <h4>💡 Suggested Questions</h4>
-            ${questionsHtml}
-          </div>
-        </div>
-        <div class="detail-block" style="margin-bottom:12px;">
-          <h4>🔬 Research Cards</h4>
-          ${researchHtml}
-        </div>
-        <div class="detail-block" style="margin-bottom:12px;">
-          <h4>⚠ Fact-Check Alerts</h4>
-          ${factsHtml}
-        </div>
-        <div class="detail-block" style="margin-bottom:0;">
-          <h4>📝 Transcript Snippets</h4>
-          ${transcriptHtml}
-        </div>
-        <div class="session-footer">
-          <button class="btn btn-outline btn-small" onclick="exportPDF('${escHtml(sid)}')">🖨 Export as PDF</button>
-          <button class="btn btn-outline btn-small" onclick="exportMd('${encodeURIComponent(sid)}')">📄 Export Show Notes</button>
-        </div>`;
-    }
+ return `
+ <div class="detail-grid">
+ <div class="detail-block">
+ <h4> Topics Detected</h4>
+ ${topicsHtml}
+ </div>
+ <div class="detail-block">
+ <h4> Suggested Questions</h4>
+ ${questionsHtml}
+ </div>
+ </div>
+ <div class="detail-block" style="margin-bottom:12px;">
+ <h4> Research Cards</h4>
+ ${researchHtml}
+ </div>
+ <div class="detail-block" style="margin-bottom:12px;">
+ <h4> Fact-Check Alerts</h4>
+ ${factsHtml}
+ </div>
+ <div class="detail-block" style="margin-bottom:0;">
+ <h4> Transcript Snippets</h4>
+ ${transcriptHtml}
+ </div>
+ <div class="session-footer">
+ <button class="btn btn-outline btn-small" onclick="exportPDF('${escHtml(sid)}')"> Export as PDF</button>
+ <button class="btn btn-outline btn-small" onclick="exportMd('${encodeURIComponent(sid)}')"> Export Show Notes</button>
+ </div>`;
+ }
 
-    function exportPDF(sessionId) {
-      // Expand all cards first, then print
-      document.querySelectorAll('.session-body').forEach(b => b.classList.add('open'));
-      window.print();
-    }
+ function exportPDF(sessionId) {
+ // Expand all cards first, then print
+ document.querySelectorAll('.session-body').forEach(b => b.classList.add('open'));
+ window.print();
+ }
 
-    async function exportMd(sessionId) {
-      try {
-        const resp = await fetch(`/api/session-file/${sessionId}/export`);
-        if (!resp.ok) { toast('Export failed'); return; }
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `show-notes-${decodeURIComponent(sessionId)}.md`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        toast('Export error: ' + e.message);
-      }
-    }
+ async function exportMd(sessionId) {
+ try {
+ const resp = await fetch(`/api/session-file/${sessionId}/export`);
+ if (!resp.ok) { toast('Export failed'); return; }
+ const blob = await resp.blob();
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `show-notes-${decodeURIComponent(sessionId)}.md`;
+ a.click();
+ URL.revokeObjectURL(url);
+ } catch (e) {
+ toast('Export error: ' + e.message);
+ }
+ }
 
-    function escHtml(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
+ function escHtml(s) {
+ return String(s)
+ .replace(/&/g, '&amp;')
+ .replace(/</g, '&lt;')
+ .replace(/>/g, '&gt;')
+ .replace(/"/g, '&quot;');
+ }
 
-    function toast(msg) {
-      let el = document.getElementById('toast');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'toast';
-        el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 18px;font-size:13px;z-index:200;';
-        document.body.appendChild(el);
-      }
-      el.textContent = msg;
-      el.style.opacity = '1';
-      setTimeout(() => { el.style.opacity = '0'; }, 3000);
-    }
+ function toast(msg) {
+ let el = document.getElementById('toast');
+ if (!el) {
+ el = document.createElement('div');
+ el.id = 'toast';
+ el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a24;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 18px;font-size:13px;z-index:200;';
+ document.body.appendChild(el);
+ }
+ el.textContent = msg;
+ el.style.opacity = '1';
+ setTimeout(() => { el.style.opacity = '0'; }, 3000);
+ }
 
-    loadSessions();
-  </script>
+ loadSessions();
+ </script>
 </body>
 </html>
