@@ -140,6 +140,10 @@ app.add_middleware(PageViewMiddleware)
 # Config
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+# Free models via OpenRouter (fallback to Haiku if rate limited)
+OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+OPENROUTER_FALLBACK = "qwen/qwen3-next-80b-a3b-instruct:free"
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 
@@ -156,6 +160,37 @@ def _is_valid_key(key: str) -> bool:
 
 
 claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+async def _llm_complete(prompt: str, max_tokens: int = 1500, system: str = "") -> str:
+    """Call LLM - prefers OpenRouter free models, falls back to Anthropic Haiku."""
+    messages = [{"role": "user", "content": prompt}]
+    # Try OpenRouter free first
+    if OPENROUTER_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                payload = {
+                    "model": OPENROUTER_MODEL,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                }
+                if system:
+                    payload["messages"] = [{"role": "system", "content": system}] + messages
+                r = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "HTTP-Referer": "https://podpal.show"},
+                    json=payload
+                )
+                if r.status_code == 200:
+                    return r.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"[OpenRouter] Error: {e}, falling back to Anthropic")
+    # Fallback to Anthropic Haiku
+    msg = await claude.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=max_tokens,
+        messages=messages
+    )
+    return msg.content[0].text
 
 # Data directories
 BASE_DIR = Path(__file__).parent.parent
@@ -1030,12 +1065,7 @@ Return ONLY the JSON array, no other text."""
         return []
 
     try:
-        message = await claude.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=2000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = message.content[0].text.strip()
+        raw = (await _llm_complete(prompt, max_tokens=2000)).strip()
         try:
             questions = json.loads(raw)
         except Exception:
