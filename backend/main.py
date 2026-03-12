@@ -311,12 +311,7 @@ Respond in JSON only:
 }}"""
 
     try:
-        resp = await claude.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=400,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = resp.content[0].text.strip()
+        raw = (await _llm_complete(prompt, max_tokens=400)).strip()
         if "```" in raw:
             raw = raw.split("```")[1].replace("json", "").strip()
         return json.loads(raw)
@@ -367,17 +362,13 @@ async def fetch_research(topic: str, entities: list[str], host_profile: dict) ->
                         f"Title: {r.get('title', '')}\nSummary: {r.get('description', '')}\nURL: {r.get('url', '')}"
                         for r in brave_hits
                     ])
-                    synth = await claude.messages.create(
-                        model="claude-haiku-4-5",
-                        max_tokens=400,
-                        messages=[{"role": "user", "content": (
+                    synth_prompt = (
                             f"You are a research assistant helping a live podcast host. "
                             f"Synthesise these web search results about '{query}' into a clean 2-3 paragraph "
                             f"summary with specific facts and insights the host can use right now. "
                             f"Be concise and direct — no filler phrases.\n\n{result_snippets}"
-                        )}]
-                    )
-                    results["research"] = synth.content[0].text
+                        )
+                    results["research"] = await _llm_complete(synth_prompt, max_tokens=400)
                     results["source"] = "Web Search"
                     results["source_url"] = top_url
         except Exception as e:
@@ -385,12 +376,7 @@ async def fetch_research(topic: str, entities: list[str], host_profile: dict) ->
 
     if not results.get("research"):
         try:
-            resp = await claude.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=250,
-                messages=[{"role": "user", "content": f"Give me 3 key facts or statistics about '{query}' that would be useful in a podcast conversation. Be specific."}]
-            )
-            results["research"] = resp.content[0].text
+            results["research"] = await _llm_complete(f"Give me 3 key facts or statistics about '{query}' that would be useful in a podcast conversation. Be specific.", max_tokens=250)
             results["source"] = "AI Knowledge"
         except Exception as e:
             print(f"Claude fallback error: {e}")
@@ -562,12 +548,7 @@ Return JSON only — no markdown, no extra text:
 }}"""
 
     try:
-        resp = await claude.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=900,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = resp.content[0].text.strip()
+        raw = (await _llm_complete(prompt, max_tokens=900)).strip()
         if "```" in raw:
             raw = raw.split("```")[1].replace("json", "").strip()
         summary_data = json.loads(raw)
@@ -612,12 +593,7 @@ Rules:
 - No filler phrases"""
 
     try:
-        resp = await claude.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=80,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        question = resp.content[0].text.strip().strip('"').strip("'")
+        question = (await _llm_complete(prompt, max_tokens=80)).strip().strip('"').strip("'")
         # Track it
         if question and question not in session.suggested_questions:
             session.suggested_questions.append(question)
@@ -992,12 +968,7 @@ Return JSON only:
 }}"""
 
     try:
-        resp = await claude.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=600,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = resp.content[0].text.strip()
+        raw = (await _llm_complete(prompt, max_tokens=600)).strip()
         if "```" in raw:
             raw = raw.split("```")[1].replace("json", "").strip()
         brief = json.loads(raw)
