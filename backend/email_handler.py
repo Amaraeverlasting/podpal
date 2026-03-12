@@ -48,7 +48,7 @@ def _base_layout(content: str) -> str:
   <style>
     body {{ margin:0;padding:0;background:#08080f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
     .wrap {{ max-width:560px;margin:0 auto;padding:40px 24px; }}
-    .logo {{ font-size:22px;font-weight:800;color:#e8e8f2;margin-bottom:32px; }}
+    .logo {{ display:inline-block;font-size:22px;font-weight:800;color:#e8e8f2;margin-bottom:32px;background:#0a0a0f;padding:8px 16px;border-radius:8px; }}
     .logo span {{ color:#4ecdc4; }}
     .card {{ background:#0f0f1a;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px; }}
     h1 {{ color:#e8e8f2;font-size:22px;margin:0 0 12px; }}
