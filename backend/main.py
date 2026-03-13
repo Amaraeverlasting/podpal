@@ -1212,33 +1212,43 @@ _tick_state: dict = {}
 
 
 @app.get("/trial")
-async def redeem_code_page(code: str, request: Request):
+async def redeem_code_page(request: Request, code: str = ""):
     """Shareable trial link. Validates code, sets user tier, redirects to /welcome."""
-    if not _trial_ok:
-        return HTMLResponse("<h2>Trial system unavailable.</h2>", status_code=503)
-    if not code:
-        return HTMLResponse("<h2>No code provided.</h2>", status_code=400)
+    try:
+        if not _trial_ok:
+            return HTMLResponse("<h2>Trial system unavailable.</h2>", status_code=503)
+        if not code:
+            return HTMLResponse("<h2>No code provided.</h2>", status_code=400)
 
-    # Require login to redeem (create anonymous session or redirect to login)
-    user = get_current_user(request)
-    if not user:
-        # Store code in redirect URL so they can redeem after login
-        from urllib.parse import quote
-        next_url = quote(f"/trial?code={code}", safe="")
-        return RedirectResponse(url=f"/login?next={next_url}", status_code=302)
+        # Require login to redeem — redirect to login with code preserved in next param
+        try:
+            user = get_current_user(request)
+        except Exception:
+            user = None
 
-    email = user["email"]
-    result = redeem_trial_code(code, email)
-    if not result["ok"]:
+        if not user:
+            from urllib.parse import quote
+            next_url = quote(f"/trial?code={code}", safe="")
+            return RedirectResponse(url=f"/login?next={next_url}", status_code=302)
+
+        email = user["email"]
+        result = redeem_trial_code(code, email)
+        if not result["ok"]:
+            return HTMLResponse(
+                f"<h2>Code error: {result.get('error', 'Unknown error')}</h2>"
+                "<p><a href='/app'>Go to app</a></p>",
+                status_code=400
+            )
+
+        tier = result["tier"]
+        days = result["days"]
+        return RedirectResponse(url=f"/welcome?trial={tier}&days={days}", status_code=302)
+    except Exception as e:
+        import traceback
         return HTMLResponse(
-            f"<h2>Code error: {result.get('error', 'Unknown error')}</h2>"
-            "<p><a href='/app'>Go to app</a></p>",
-            status_code=400
+            f"<h2>Something went wrong</h2><pre>{traceback.format_exc()}</pre>",
+            status_code=500
         )
-
-    tier = result["tier"]
-    days = result["days"]
-    return RedirectResponse(url=f"/welcome?trial={tier}&days={days}", status_code=302)
 
 
 # ── Admin trial-code endpoints ─────────────────────────────────────────────
