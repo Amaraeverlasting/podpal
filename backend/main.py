@@ -8,18 +8,30 @@ import asyncio
 import json
 import os
 import re
+import sys
+import shutil
 import time
+import uuid
 from collections import deque
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+# Clipper engine (workspace root sibling)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+try:
+    from clipper.engine import process_video as _clipper_process_video
+    _clipper_ok = True
+except Exception as _e:
+    print(f"[WARN] Clipper engine failed to load: {_e}")
+    _clipper_ok = False
+
 import anthropic
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, File, Form, Request, UploadFile, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
@@ -1502,3 +1514,166 @@ async def _send_drip7(email: str):
 async def startup_event():
     asyncio.create_task(_drip_loop())
     print("[podpal] Drip email scheduler started")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLIPPINGS — AI video clip generation
+# ═══════════════════════════════════════════════════════════════════════════════
+
+_PODPAL_BASE      = Path(__file__).parent.parent
+_PP_CLIPS_DIR     = _PODPAL_BASE / "data" / "clips"
+_PP_CLIPS_UPLOADS = _PP_CLIPS_DIR / "uploads"
+_PP_CLIPS_OUTPUT  = _PP_CLIPS_DIR / "output"
+_PP_CLIPS_JOBS    = _PP_CLIPS_DIR / "jobs"
+
+for _d in [_PP_CLIPS_UPLOADS, _PP_CLIPS_OUTPUT, _PP_CLIPS_JOBS]:
+    _d.mkdir(parents=True, exist_ok=True)
+
+
+def _pp_get_job(job_id: str) -> dict:
+    path = _PP_CLIPS_JOBS / f"{job_id}.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def _pp_save_job(job_id: str, state: dict):
+    (_PP_CLIPS_JOBS / f"{job_id}.json").write_text(json.dumps(state, indent=2))
+
+
+def _pp_run_job(job_id: str, video_path: str, num_clips: int):
+    state = _pp_get_job(job_id)
+    try:
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not anthropic_key:
+            for p in [Path.home() / ".openclaw/secrets.json"]:
+                if p.exists():
+                    try:
+                        d = json.loads(p.read_text())
+                        anthropic_key = d.get("anthropic", {}).get("apiKey", "")
+                    except Exception:
+                        pass
+
+        def _progress(msg: str):
+            st = _pp_get_job(job_id)
+            st["progress"] = msg
+            if "transcrib" in msg.lower():
+                st["status"] = "transcribing"
+            elif "finding" in msg.lower():
+                st["status"] = "detecting"
+            elif "cutting" in msg.lower() or "clip" in msg.lower():
+                st["status"] = "cutting"
+            _pp_save_job(job_id, st)
+
+        clips = _clipper_process_video(
+            video_path=video_path,
+            output_dir=str(_PP_CLIPS_OUTPUT),
+            num_clips=num_clips,
+            anthropic_key=anthropic_key or None,
+            progress_callback=_progress,
+        )
+
+        enriched = []
+        for c in clips:
+            cp = Path(c["clip_path"])
+            stat = cp.stat() if cp.exists() else None
+            enriched.append({
+                **c,
+                "id": cp.stem,
+                "filename": cp.name,
+                "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat() if stat else datetime.now().isoformat(),
+            })
+
+        state["status"] = "done"
+        state["clips"] = enriched
+        state["progress"] = f"Done! {len(enriched)} clips."
+        _pp_save_job(job_id, state)
+
+    except Exception as e:
+        state["status"] = "error"
+        state["error"] = str(e)
+        _pp_save_job(job_id, state)
+
+
+@app.post("/api/clips/process")
+async def pp_clips_process(request: Request, file: UploadFile = File(None)):
+    if not _clipper_ok:
+        raise HTTPException(503, "Clipper engine not available")
+
+    job_id = str(uuid.uuid4())
+    num_clips = 5
+
+    if file and file.filename:
+        safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", file.filename)
+        upload_path = _PP_CLIPS_UPLOADS / f"{job_id}_{safe_name}"
+        with open(upload_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        video_path = str(upload_path)
+    else:
+        body = await request.json()
+        video_path = body.get("video_path", "")
+        num_clips = int(body.get("num_clips", 5))
+        if not video_path or not Path(video_path).exists():
+            raise HTTPException(400, "video_path not found")
+
+    state = {
+        "job_id": job_id,
+        "status": "queued",
+        "video_path": video_path,
+        "num_clips": num_clips,
+        "clips": [],
+        "error": None,
+        "progress": "Queued",
+        "created_at": datetime.now().isoformat(),
+    }
+    _pp_save_job(job_id, state)
+
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _pp_run_job, job_id, video_path, num_clips)
+
+    return {"job_id": job_id}
+
+
+@app.get("/api/clips/job/{job_id}")
+async def pp_clips_job_status(job_id: str):
+    state = _pp_get_job(job_id)
+    if not state:
+        raise HTTPException(404, "Job not found")
+    return state
+
+
+@app.get("/api/clips/")
+async def pp_clips_list():
+    clips = []
+    for f in sorted(_PP_CLIPS_OUTPUT.glob("*.mp4"), key=lambda x: x.stat().st_mtime, reverse=True):
+        stat = f.stat()
+        meta = {"score": None, "reason": "", "title": f.stem}
+        for jf in _PP_CLIPS_JOBS.glob("*.json"):
+            try:
+                job = json.loads(jf.read_text())
+                for c in job.get("clips", []):
+                    if c.get("filename") == f.name:
+                        meta = c
+                        break
+            except Exception:
+                pass
+        clips.append({
+            "id": f.stem,
+            "title": meta.get("title", f.stem),
+            "filename": f.name,
+            "score": meta.get("score"),
+            "reason": meta.get("reason", ""),
+            "transcript_excerpt": meta.get("transcript_excerpt", ""),
+            "start": meta.get("start"),
+            "end": meta.get("end"),
+            "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            "size_mb": round(stat.st_size / 1024 / 1024, 1),
+        })
+    return clips
+
+
+@app.get("/api/clips/file/{filename}")
+async def pp_clips_file(filename: str):
+    safe = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
+    path = _PP_CLIPS_OUTPUT / safe
+    if not path.exists():
+        raise HTTPException(404, "Clip not found")
+    return FileResponse(str(path), media_type="video/mp4")
